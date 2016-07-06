@@ -1,8 +1,10 @@
 #lang racket
 
-(require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt")
+(require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt")
 
-(provide @string? @string-append @string-length @substring @string-ref @string-contains? @string-prefix? @string-suffix? @string-replace @str-to-int @int-to-str)
+(provide @string? @string-append @string-length @substring @string-ref
+         @string-contains? @string-prefix? @string-suffix? @string-replace
+         @str-to-int @int-to-str @string-set! @string-fill! @string-copy!)
 
 (define (string/equal? x y)
   (match* (x y)
@@ -46,9 +48,13 @@
 
 ; TODO refactor to lift-op like other stuff
 
+; Operators
+
+(define T*->string? (const @string?))
+
 (define-operator @string-append
   #:identifier 'string-append
-  #:range T*->T ;TODO nary-type
+  #:range T*->T
   #:unsafe @string-append
   #:safe
   (case-lambda
@@ -65,7 +71,7 @@
 
 (define-operator @string-length
   #:identifier 'string-length
-  #:range T*->T ; TODO (op/-> (@string?) @number?)
+  #:range T*->integer?
   #:unsafe @string-length
   #:safe
   (match-lambda
@@ -79,7 +85,7 @@
 
 (define-operator @int-to-str
   #:identifier 'int-to-str
-  #:range T*->T ; TODO (op/-> (@number?) @string?)
+  #:range T*->string?
   ;#:unsafe TODO
   #:safe
   (match-lambda
@@ -92,7 +98,7 @@
 
 (define-operator @str-to-int
   #:identifier 'str-to-int
-  #:range T*->T ; TODO (op/-> (@string?) @number?)
+  #:range T*->integer?
   ;#:unsafe TODO
   #:safe
   (match-lambda [(? string? x) (str-to-int x)]
@@ -100,7 +106,7 @@
 
 (define-operator @substring
   #:identifier 'substring
-  #:range T*->T ;TODO (op/-> (@string? @number? #:rest @number?) @string?)
+  #:range T*->string?
   ;#:unsafe TODO
   ; TODO #:pre  (case-lambda [(s i) (&& (@>= i 0) (@<= i (@string-length s)))]
                       ;[(s i j) (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))])
@@ -112,7 +118,7 @@
 
 (define-operator @string-contains?
   #:identifier 'string-contains?
-  #:range T*->T ;TODO (op/-> (@string? @string?) @boolean?)
+  #:range T*->boolean? 
   ;#:unsafe TODO
   #:safe
   (lambda (s p)
@@ -122,7 +128,7 @@
 
 (define-operator @string-replace
   #:identifier 'string-replace
-  #:range T*->T ;TODO (op/-> (@string? @string? @string?) @string?)
+  #:range T*->T
   ;#:unsafe TODO
   #:safe
   (lambda (s from to)
@@ -132,7 +138,7 @@
 
 (define-operator @string-prefix?
   #:identifier 'string-prefix?
-  #:range T*->T ;TODO (op/-> (@string? @string?) @boolean?)
+  #:range T*->boolean? 
   ;#:unsafe TODO
   #:safe
   (lambda (x y)
@@ -142,7 +148,7 @@
               
 (define-operator @string-suffix?
   #:identifier 'string-suffix?
-  #:range T*->T ;TODO (op/-> (@string? @string?) @boolean?)
+  #:range T*->boolean?
   ;#:unsafe TODO
   #:safe
   (lambda (s p)
@@ -150,13 +156,12 @@
 	(string-suffix? s p)
 	(expression @string-suffix? s p))))
 
-(define-operator @string-ref
-  #:identifier 'string-ref
-  #:range T*->T ;TODO 
+;(define-operator @string-ref TODO
+  ;#:identifier 'string-ref
+  ;#:range T*->T ;TODO 
   ;#:unsafe TODO
   ;#:safe TODO
-  )
-
+  ;)
 
 ; We are going to disable all mutation operations on strings. TODO? Do I need this?
 
