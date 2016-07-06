@@ -1,7 +1,7 @@
 #lang racket
 
 (require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
-         "merge.rkt")
+         "merge.rkt" "safe.rkt")
 
 (provide @string? @string-append @string-length @substring ;@string-ref TODO
          @string-contains? @string-prefix? @string-suffix? @string-replace
@@ -41,12 +41,23 @@
 
 ; TODO refactor to lift-op like other stuff
 
+;; ----------------- Lifting utilities ----------------- ;; 
+
+(define (lift-op op)
+  (define caller (object-name op))
+  (case (procedure-arity op)
+    [(1)  (lambda (x) (op (type-cast @string? x caller)))]
+    [(2)  (lambda (x y) (op (type-cast @string? x caller) (type-cast @string? y caller)))]
+    [else (case-lambda [() (op)]
+                       [(x) (op (type-cast @string? x caller))]
+                       [(x y) (op (type-cast @string? x caller) (type-cast @string? y caller))]
+                       [xs (apply op (for/list ([x xs]) (type-cast @string? x caller)))])]))
+
+(define T*->string? (const @string?))
 
 ;; ----------------- String Operators ----------------- ;;
 
 ; TODO check that safe actually are safe and unsafe are what we want
-
-(define T*->string? (const @string?))
 
 (define (string-append-simplify xs)
   (match xs
@@ -73,16 +84,18 @@
   #:identifier 'string-append
   #:range T*->T
   #:unsafe string-append
-  #:safe string-append) ; TODO
+  #:safe (lift-op string-append))
+
+(define (string-length x)
+  (match-lambda
+    [(? string? x) (string-length x)]
+    [x (expression @string-length x)]))
 
 (define-operator @string-length
   #:identifier 'string-length
   #:range T*->integer?
   #:unsafe string-length
-  #:safe
-  (match-lambda
-    [(? string? x) (string-length x)]
-    [x (expression @string-length x)]))
+  #:safe (lift-op string-length))
 
 (define (int-to-str i)
   (match i
@@ -104,16 +117,17 @@
     [a (int-to-str a)])))
 
 (define (str-to-int s)
-  (let ((n (string->number s)))
-    (if (and n (integer? n) (>= n 0)) n -1)))
+  (match s
+    [(? string? x)
+     (let ((n (string->number s)))
+       (if (and n (integer? n) (>= n 0)) n -1))]
+    [x (expression @str-to-int x)]))
 
 (define-operator @str-to-int
   #:identifier 'str-to-int
   #:range T*->integer?
   #:unsafe str-to-int
-  #:safe
-  (match-lambda [(? string? x) (str-to-int x)]
-                [x (expression @str-to-int x)]))
+  #:safe (lift-op str-to-int))
 
 (define-operator @substring
   #:identifier 'substring
@@ -121,51 +135,59 @@
   #:unsafe substring
   ; TODO #:pre  (case-lambda [(s i) (&& (@>= i 0) (@<= i (@string-length s)))]
                       ;[(s i j) (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))])
-  #:safe
+  #:safe ;TODO
   (lambda (s i [j (@string-length s)])
     (if (and (string? s) (number? i) (number? j)) 
         (substring s i j)
         (expression @substring s i j))))
 
+; TODO refactor this pattern out into aux function
+(define (string-contains? s p)
+  (if (and (string? s) (string? p))
+      (string-contains? s p)
+      (expression @string-contains? s p)))
+
 (define-operator @string-contains?
   #:identifier 'string-contains?
   #:range T*->boolean? 
   #:unsafe string-contains?
-  #:safe
-  (lambda (s p)
-    (if (and (string? s) (string? p))
-	(string-contains? s p)
-	(expression @string-contains? s p))))
+  #:safe (lift-op string-contains?))
 
-(define-operator @string-replace
-  #:identifier 'string-replace
-  #:range T*->T
-  #:unsafe string-replace
-  #:safe
+ ;TODO not sure how to lift the following correctly (weird type signature), need to revisit
+
+(define (string-replace from to)
   (lambda (s from to)
     (if (and (string? s) (string? from) (string? to))
 	(string-replace s from to)
 	(expression @string-replace s from to))))
 
+(define-operator @string-replace
+  #:identifier 'string-replace
+  #:range T*->T
+  #:unsafe string-replace
+  #:safe (lift-op string-replace))
+
+(define (string-prefix? x y)
+  (match* (x y)
+    [((? string?) (? string?)) (string-prefix? x y)]
+    [(_ _) (expression @string-prefix? x y)]))
+ 
 (define-operator @string-prefix?
   #:identifier 'string-prefix?
   #:range T*->boolean? 
   #:unsafe string-prefix?
-  #:safe
-  (lambda (x y)
-    (match* (x y)
-      [((? string?) (? string?)) (string-prefix? x y)]
-      [(_ _) (expression @string-prefix? x y)])))
+  #:safe (lift-op string-prefix?))
+
+(define (string-suffix? s p)
+  (if (and (string? s) (string? p))
+      (string-suffix? s p)
+      (expression @string-suffix? s p)))
               
 (define-operator @string-suffix?
   #:identifier 'string-suffix?
   #:range T*->boolean?
   #:unsafe string-suffix?
-  #:safe
-  (lambda (s p)
-    (if (and (string? s) (string? p))
-	(string-suffix? s p)
-	(expression @string-suffix? s p))))
+  #:safe (lift-op string-suffix?))
 
 ;(define-operator @string-ref ;TODO what can I do with this? Don't have char yet
   ;#:identifier 'string-ref
@@ -174,7 +196,7 @@
   ;#:safe TODO
   ;)
 
-; We are going to disable all mutation operations on strings. TODO? Do I need this?
+; We are going to disable all mutation operations on strings. TODO? Do I need this, since I don't need those methods?
 
 ;(define disable-mutation (lambda xs (error 'string-set! "string mutation not supported")))
 
