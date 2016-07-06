@@ -21,10 +21,10 @@
    (define (type-equal? self u v) (string/equal? u v))
    (define (type-cast self v [caller 'type-cast])
      (match v
-       [(? string?) (values #t v)]
-       [(term _ (== @string?)) (values #t v)]
-       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (values g u)]
-       [_ (values #f v)]))
+       [(? string?) v]
+       [(term _ (== self)) v]
+       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (values g u)] ;TODO
+       [_ (assert #f)])) ;TODO
    (define (type-compress self force? ps) string/compress)])     
 
 ; The value of the force? parameter is ignored since 
@@ -41,17 +41,32 @@
 
 ; TODO refactor to lift-op like other stuff
 
-;; ----------------- Lifting utilities ----------------- ;; 
+;; ----------------- Lifting utilities ----------------- ;;
 
-(define (lift-op op)
-  (define caller (object-name op))
+; TODO are safe-apply-1 and safe-apply-2 usually called out for the sake of efficiency?
+
+(define (safe-apply-n op xs @ts?)
+  (define caller (object-name op)) 
+  (cond
+    [(empty? @ts?) (apply op (for/list ([x xs]) (type-cast @string? x caller)))]
+    [else (apply op (for/list ([x xs] [@t? @ts?]) (type-cast @t? x caller)))]))
+
+(define (safe-apply-1 op x @ts?)
+  (safe-apply-n op (list x) @ts?))
+
+(define (safe-apply-2 op x y @ts?)
+  (safe-apply-n op (list x y) @ts?))
+
+(define (lift-op op . ts)
   (case (procedure-arity op)
-    [(1)  (lambda (x) (op (type-cast @string? x caller)))]
-    [(2)  (lambda (x y) (op (type-cast @string? x caller) (type-cast @string? y caller)))]
-    [else (case-lambda [() (op)]
-                       [(x) (op (type-cast @string? x caller))]
-                       [(x y) (op (type-cast @string? x caller) (type-cast @string? y caller))]
-                       [xs (apply op (for/list ([x xs]) (type-cast @string? x caller)))])]))
+    [(1)  (lambda (x) (safe-apply-1 op x ts))]
+    [(2)  (lambda (x y) (safe-apply-2 op x y ts))]
+    [else
+     (case-lambda
+       [() (op)]
+       [(x) (safe-apply-1 op x ts)]
+       [(x y) (safe-apply-2 op x y ts)]
+       [xs (safe-apply-n op xs ts)])]))
 
 (define T*->string? (const @string?))
 
@@ -67,15 +82,15 @@
      (list* (apply string-append x) (string-append-simplify rest))]
     [(list x rest ...) (list* x (string-append-simplify rest))]))
 
-(define (string-append xs)
-  (case-lambda
-    [() ""]
-    [(x) x]
-    [(x y)
+(define ($string-append . xs)
+  (match xs
+    [`() ""]
+    [(list x) x]
+    [(list x y)
      (match* (x y)
        [((? string?) (? string?)) (string-append x y)]
        [(_ _) (expression @string-append x y)])]
-    [xs
+    [_
      (match (string-append-simplify xs)
        [(list x) x]
        [ys (apply expression @string-append ys)])]))
@@ -83,8 +98,8 @@
 (define-operator @string-append
   #:identifier 'string-append
   #:range T*->T
-  #:unsafe string-append
-  #:safe (lift-op string-append))
+  #:unsafe $string-append
+  #:safe (lift-op $string-append))
 
 (define (string-length x)
   (match-lambda
@@ -129,17 +144,22 @@
   #:unsafe str-to-int
   #:safe (lift-op str-to-int))
 
+(define (substring s i [j (@string-length s)])
+  (if (and (string? s) (number? i) (number? j)) 
+      (substring s i j)
+      (expression @substring s i j)))
+
 (define-operator @substring
   #:identifier 'substring
   #:range T*->string?
   #:unsafe substring
   ; TODO #:pre  (case-lambda [(s i) (&& (@>= i 0) (@<= i (@string-length s)))]
-                      ;[(s i j) (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))])
-  #:safe ;TODO
-  (lambda (s i [j (@string-length s)])
-    (if (and (string? s) (number? i) (number? j)) 
-        (substring s i j)
-        (expression @substring s i j))))
+                      ;[(s i j) (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))]) what was this? where does it go?
+  #:safe (lambda (s i [j (@string-length s)])
+           (substring
+            (type-cast @string? s 'substring)
+            (type-cast @integer? i 'substring)
+            (type-cast @integer? j 'substring))))
 
 ; TODO refactor this pattern out into aux function
 (define (string-contains? s p)
