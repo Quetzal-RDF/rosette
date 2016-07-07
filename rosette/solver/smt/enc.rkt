@@ -59,7 +59,7 @@
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @substring) str i j)
-     (define length (enc (@string-length str) env))
+     (define length sh (enc (@string-length str) env))
      ($str.substr (enc str env) (enc i env) (- length (enc j env)))]
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
      (apply $op (for/list ([e es]) (enc e env)))]

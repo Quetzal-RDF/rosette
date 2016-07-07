@@ -153,7 +153,7 @@
   #:unsafe $substring
   #:safe (lift-op guarded-substring @string? @integer? @integer?))
 
-(define ($string-contains? s p)
+(define ($string-contains? s p) ; TODO refactor out this pattern
   (if (and (string? s) (string? p))
       (string-contains? s p)
       (expression @string-contains? s p)))
@@ -205,7 +205,9 @@
   #:safe (lift-op $string-suffix?))
 
 (define (string-at s offset)
-  (@substring s offset (+ offset 1)))
+  (if (and (string? s) (number? offset))
+      (@substring s offset (+ offset 1))
+      (expression @string-at s offset)))
 
 (define-operator @string-at
   #:identifier 'string-at
@@ -213,12 +215,14 @@
   #:unsafe string-at
   #:safe (lift-op string-at @string? @integer?))
 
-;(define-operator @string-ref ;TODO what can I do with this? Don't have char yet
-  ;#:identifier 'string-ref
-  ;#:range T*->T ;TODO 
-  ;#:unsafe TODO
-  ;#:safe TODO
-  ;)
+; TODO index-of
+;(define (index-of s sub offset)
+;)
+
+;(define (string-index-of s sub [offset 0])
+  ;(if (and (string? s) (string? sub) (number? offset))
+      ;(index-of s sub offset)
+      ;(expression @string-index-of s sub offset)))
 
 ; We are going to disable all mutation operations on strings. TODO? Do I need this, since I don't need those methods?
 
