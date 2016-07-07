@@ -153,7 +153,6 @@
   #:unsafe $substring
   #:safe (lift-op guarded-substring @string? @integer? @integer?))
 
-; TODO refactor this pattern out into aux function
 (define ($string-contains? s p)
   (if (and (string? s) (string? p))
       (string-contains? s p)
@@ -165,18 +164,23 @@
   #:unsafe $string-contains?
   #:safe (lift-op $string-contains?))
 
- ;TODO for now, only accepts strings, eventually needs or/c string? regexp? for from argument
-
-(define ($string-replace s from to)
+(define ($string-replace s from to #:all? [all? #t])
   (if (and (string? s) (string? from) (string? to))
-      (string-replace s from to #:all? #f) ; TODO Z3 only replaces first, should we enable both, follow Z3, or follow Racket?
+      (string-replace s from to #:all? all?)
       (expression @string-replace s from to)))
 
 (define-operator @string-replace
   #:identifier 'string-replace
-  #:range T*->T
+  #:range T*->string?
   #:unsafe $string-replace
-  #:safe (lift-op $string-replace))
+  #:safe
+  (lambda (s from to #:all? [all? #t])
+    (define caller 'string-replace)
+    ($string-replace
+     (type-cast @string? s caller)
+     (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
+     (type-cast @string? to caller)
+     #:all? all?))) ; Do I need to TC this if it's an any/c in Racket?
 
 (define ($string-prefix? x y)
   (match* (x y)
