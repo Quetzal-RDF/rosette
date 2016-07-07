@@ -45,6 +45,11 @@
      term=? term->datum clear-terms! term-cache
      union? union union-contents union-guards union-values
      union-filter in-union in-union* in-union-guards in-union-values
+     ; core/string.rkt
+     @string? @string-append @string-length
+     @int-to-str @str-to-int @substring @string-contains?
+     @string-replace @string-prefix? @string-suffix?
+     @string-at
      ; adt/box.rkt
      @box @box-immutable @box? @unbox @set-box!
      ; adt/list.rkt : Pair Constructors and Selectors

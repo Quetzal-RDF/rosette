@@ -111,3 +111,11 @@
   + - * / div mod abs 
   < <= 
   is_int to_int to_real )
+
+; String theory
+(define String 'String)
+(define-ops
+  str.++ str.len str.substr
+  str.indexof str.at str.contains
+  str.prefixof str.suffixof str.replace
+  str.to.int int.to.str)

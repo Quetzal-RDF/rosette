@@ -5,7 +5,7 @@
 
 (provide @string? @string-append @string-length @substring ;@string-ref TODO
          @string-contains? @string-prefix? @string-suffix? @string-replace
-         @str-to-int @int-to-str)
+         @str-to-int @int-to-str @string-at)
 
 (define (string/equal? x y)
   (match* (x y)
@@ -39,8 +39,6 @@
      (list (cons (apply || g)
                  (apply @string-append (for/list ([guard g][str a]) (ite guard str "")))))]))
 
-; TODO refactor to lift-op like other stuff
-
 ;; ----------------- Lifting utilities ----------------- ;;
 
 ; TODO are safe-apply-1 and safe-apply-2 usually called out for the sake of efficiency?
@@ -71,8 +69,6 @@
 (define T*->string? (const @string?))
 
 ;; ----------------- String Operators ----------------- ;;
-
-; TODO check that safe actually are safe and unsafe are what we want
 
 (define (string-append-simplify xs)
   (match xs
@@ -173,7 +169,7 @@
 
 (define ($string-replace s from to)
   (if (and (string? s) (string? from) (string? to))
-      (string-replace s from to #:all? #f) ; TODO Z3 only replaces first by default, should we enable both, follow Z3, or follow Racket?
+      (string-replace s from to #:all? #f) ; TODO Z3 only replaces first, should we enable both, follow Z3, or follow Racket?
       (expression @string-replace s from to)))
 
 (define-operator @string-replace
@@ -203,6 +199,15 @@
   #:range T*->boolean?
   #:unsafe $string-suffix?
   #:safe (lift-op $string-suffix?))
+
+(define (string-at s offset)
+  (@substring s offset (+ offset 1)))
+
+(define-operator @string-at
+  #:identifier 'string-at
+  #:range T*->string?
+  #:unsafe string-at
+  #:safe (lift-op string-at @string? @integer?))
 
 ;(define-operator @string-ref ;TODO what can I do with this? Don't have char yet
   ;#:identifier 'string-ref

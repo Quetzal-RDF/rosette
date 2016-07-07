@@ -15,7 +15,11 @@
                   @bvnot @bvor @bvand @bvxor @bvshl @bvlshr @bvashr
                   @bvneg @bvadd @bvmul @bvudiv @bvsdiv @bvurem @bvsrem @bvsmod
                   @concat @extract @zero-extend @sign-extend 
-                  @integer->bitvector @bitvector->integer @bitvector->natural))
+                  @integer->bitvector @bitvector->integer @bitvector->natural)
+         (only-in "../../base/core/string.rkt"
+                  @string-append @string-length @substring
+                  @string-contains? @string-prefix? @string-suffix?
+                  @string-replace @str-to-int @int-to-str @string-at))
 
 (provide enc)
 
@@ -67,6 +71,7 @@
     [(? integer?) (inexact->exact v)]
     [(? real?) (if (exact? v) ($/ (numerator v) (denominator v)) v)]
     [(bv lit t) ($bv lit (bitvector-size t))]
+    [(? string?) v]
     [_ (error 'enc "expected a boolean?, integer?, real?, or bitvector?, given ~a" v)]))
 
 (define-syntax define-encoder
@@ -89,7 +94,15 @@
   [@bvnot $bvnot] [@bvor $bvor] [@bvand $bvand] [@bvxor $bvxor] 
   [@bvshl $bvshl] [@bvlshr $bvlshr] [@bvashr $bvashr]
   [@bvneg $bvneg] [@bvadd $bvadd] [@bvmul $bvmul] [@bvudiv $bvudiv] [@bvsdiv $bvsdiv]
-  [@bvurem $bvurem] [@bvsrem $bvsrem] [@bvsmod $bvsmod] [@concat $concat])
+  [@bvurem $bvurem] [@bvsrem $bvsrem] [@bvsmod $bvsmod] [@concat $concat]
+  ; string
+  [@string-append $str.++] [@string-length $str.len] [@int-to-str $int.to.str]
+  [@str-to-int $str.to.int] [@substring $str.substr] [@string-contains? $str.contains]
+  [@string-replace $str.replace] [@string-prefix? $str.prefixof]
+  [@string-suffix? $str.suffixof] [@string-at $str.at])
+
+; TODO: for some of these (like replace), where racket and Z3 defaults differ, may
+; need a better encoding, will revisit once basic code is working
 
 
 (define ($quotient tx ty)
