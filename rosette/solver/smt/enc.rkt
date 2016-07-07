@@ -19,7 +19,8 @@
          (only-in "../../base/core/string.rkt"
                   @string-append @string-length @substring
                   @string-contains? @string-prefix? @string-suffix?
-                  @string-replace @str-to-int @int-to-str @string-at))
+                  @string-replace @string->integer @integer->string
+                  @string-at))
 
 (provide enc)
 
@@ -58,9 +59,11 @@
      ($bv->int (enc v env) (bitvector-size (get-type v)))]  
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
-    [(expression (== @substring) str i j)
-     (define length sh (enc (@string-length str) env))
-     ($str.substr (enc str env) (enc i env) (- length (enc j env)))]
+    [(expression (== @substring) s i j)
+     (define length (enc (@string-length s) env))
+     ($str.substr (enc s env) (enc i env) (- length (enc j env)))]
+    ;[(expression (== @string-replace) s from to)
+     ;($str.replace)] TODO
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
      (apply $op (for/list ([e es]) (enc e env)))]
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
@@ -99,9 +102,9 @@
   [@bvneg $bvneg] [@bvadd $bvadd] [@bvmul $bvmul] [@bvudiv $bvudiv] [@bvsdiv $bvsdiv]
   [@bvurem $bvurem] [@bvsrem $bvsrem] [@bvsmod $bvsmod] [@concat $concat]
   ; string
-  [@string-append $str.++] [@string-length $str.len] [@int-to-str $int.to.str]
-  [@str-to-int $str.to.int] [@string-contains? $str.contains]
-  [@string-replace $str.replace] [@string-prefix? $str.prefixof]
+  [@string-append $str.++] [@string-length $str.len]
+  [@integer->string $int.to.str] [@string->integer $str.to.int]
+  [@string-contains? $str.contains] [@string-prefix? $str.prefixof]
   [@string-suffix? $str.suffixof] [@string-at $str.at])
 
 ; TODO: for some of these (like replace), where racket and Z3 defaults differ, may

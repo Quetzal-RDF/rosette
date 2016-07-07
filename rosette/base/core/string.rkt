@@ -3,9 +3,10 @@
 (require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
          "merge.rkt" "safe.rkt")
 
-(provide @string? @string-append @string-length @substring ;@string-ref TODO
-         @string-contains? @string-prefix? @string-suffix? @string-replace
-         @str-to-int @int-to-str @string-at)
+(provide @string? @string-append @string-length @substring
+         @string-contains? @string-prefix? @string-suffix?
+         @string-replace @string->integer @integer->string
+         @string-at) ;@string-index-of)
 
 (define (string/equal? x y)
   (match* (x y)
@@ -108,35 +109,34 @@
   #:unsafe $string-length
   #:safe (lift-op $string-length))
 
-(define (int-to-str i)
+(define (integer->string i)
   (match i
-    [(? number? x)
-     (if (and x (integer? x) (>= x 0))
-      (number->string x)
-      "")]
-    [x (expression @int-to-str x)]))
+    [(? integer? x) (number->string x)]
+    [x (expression @integer->string x)]))
   
-(define-operator @int-to-str
-  #:identifier 'int-to-str
+(define-operator @integer->string
+  #:identifier 'integer->string
   #:range T*->string?
-  #:unsafe int-to-str
-  #:safe (lift-op int-to-str @integer?))
+  #:unsafe integer->string
+  #:safe (lift-op integer->string @integer?))
 
-(define (str-to-int s)
+(define (string->integer s)
   (match s
     [(? string? x)
      (let ((n (string->number s)))
-       (if
-        (and n (integer? n) (>= n 0))
-        n
-        0))] ; TODO old behavior is -1, Racket is #f, Z3 is 0; what do we want?
-    [x (expression @str-to-int x)]))
+       (if (integer? n) n #f))] 
+    [x (expression @string->integer x)]))
 
-(define-operator @str-to-int
-  #:identifier 'str-to-int
+(define (guarded-string->integer s)
+  (let ((i (string->integer s)))
+    (type-cast @integer? i 'string->integer)
+    i))
+
+(define-operator @string->integer
+  #:identifier 'string->integer
   #:range T*->integer?
-  #:unsafe str-to-int
-  #:safe (lift-op str-to-int))
+  #:unsafe string->integer
+  #:safe (lift-op guarded-string->integer))
 
 (define ($substring s i [j (@string-length s)])
   (if (and (string? s) (number? i) (number? j)) 
@@ -145,7 +145,7 @@
 
 (define (guarded-substring s i [j (@string-length s)])
   (assert (&& (@>= i 0) (@<= i j) (@<= j (@string-length s))))
-  (substring s i j))
+  ($substring s i j))
   
 (define-operator @substring 
   #:identifier 'substring
@@ -167,7 +167,7 @@
 (define ($string-replace s from to #:all? [all? #t])
   (if (and (string? s) (string? from) (string? to))
       (string-replace s from to #:all? all?)
-      (expression @string-replace s from to)))
+      (expression @string-replace s from to all?))) ; TODO need to deal with #:all? somehow
 
 (define-operator @string-replace
   #:identifier 'string-replace
@@ -217,7 +217,9 @@
 
 ; TODO index-of
 ;(define (index-of s sub offset)
-;)
+  ;(if (@string-contains? s sub)
+     ; ()
+     ; (-1)))
 
 ;(define (string-index-of s sub [offset 0])
   ;(if (and (string? s) (string? sub) (number? offset))
