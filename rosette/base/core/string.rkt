@@ -101,16 +101,16 @@
   #:unsafe $string-append
   #:safe (lift-op $string-append))
 
-(define (string-length x)
-  (match-lambda
+(define ($string-length s)
+  (match s
     [(? string? x) (string-length x)]
     [x (expression @string-length x)]))
 
 (define-operator @string-length
   #:identifier 'string-length
   #:range T*->integer?
-  #:unsafe string-length
-  #:safe (lift-op string-length))
+  #:unsafe $string-length
+  #:safe (lift-op $string-length))
 
 (define (int-to-str i)
   (match i
@@ -124,18 +124,16 @@
   #:identifier 'int-to-str
   #:range T*->string?
   #:unsafe int-to-str
-  #:safe
-  (lambda (x)
-    (match (numeric-coerce x (object-name int-to-str))
-    [(union (list (cons ga a) (cons gb b))) 
-     (merge* (cons ga (int-to-str a)) (cons gb (int-to-str b)))]
-    [a (int-to-str a)])))
+  #:safe (lift-op int-to-str @integer?))
 
 (define (str-to-int s)
   (match s
     [(? string? x)
      (let ((n (string->number s)))
-       (if (and n (integer? n) (>= n 0)) n -1))]
+       (if
+        (and n (integer? n) (>= n 0))
+        n
+        0))] ; TODO old behavior is -1, Racket is #f, Z3 is 0; what do we want?
     [x (expression @str-to-int x)]))
 
 (define-operator @str-to-int
@@ -144,25 +142,23 @@
   #:unsafe str-to-int
   #:safe (lift-op str-to-int))
 
-(define (substring s i [j (@string-length s)])
+(define ($substring s i [j (@string-length s)])
   (if (and (string? s) (number? i) (number? j)) 
       (substring s i j)
       (expression @substring s i j)))
 
-(define-operator @substring
+(define (guarded-substring s i [j (@string-length s)])
+  (assert (&& (@>= i 0) (@<= i j) (@<= j (@string-length s))))
+  (substring s i j))
+  
+(define-operator @substring 
   #:identifier 'substring
   #:range T*->string?
-  #:unsafe substring
-  ; TODO #:pre  (case-lambda [(s i) (&& (@>= i 0) (@<= i (@string-length s)))]
-                      ;[(s i j) (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))]) what was this? where does it go?
-  #:safe (lambda (s i [j (@string-length s)])
-           (substring
-            (type-cast @string? s 'substring)
-            (type-cast @integer? i 'substring)
-            (type-cast @integer? j 'substring))))
+  #:unsafe $substring
+  #:safe (lift-op guarded-substring @string? @integer? @integer?))
 
 ; TODO refactor this pattern out into aux function
-(define (string-contains? s p)
+(define ($string-contains? s p)
   (if (and (string? s) (string? p))
       (string-contains? s p)
       (expression @string-contains? s p)))
@@ -170,24 +166,23 @@
 (define-operator @string-contains?
   #:identifier 'string-contains?
   #:range T*->boolean? 
-  #:unsafe string-contains?
-  #:safe (lift-op string-contains?))
+  #:unsafe $string-contains?
+  #:safe (lift-op $string-contains?))
 
- ;TODO not sure how to lift the following correctly (weird type signature), need to revisit
+ ;TODO for now, only accepts strings, eventually needs or/c string? regexp? for from argument
 
-(define (string-replace from to)
-  (lambda (s from to)
-    (if (and (string? s) (string? from) (string? to))
-	(string-replace s from to)
-	(expression @string-replace s from to))))
+(define ($string-replace s from to)
+  (if (and (string? s) (string? from) (string? to))
+      (string-replace s from to #:all? #f) ; TODO Z3 only replaces first by default, should we enable both, follow Z3, or follow Racket?
+      (expression @string-replace s from to)))
 
 (define-operator @string-replace
   #:identifier 'string-replace
   #:range T*->T
-  #:unsafe string-replace
-  #:safe (lift-op string-replace))
+  #:unsafe $string-replace
+  #:safe (lift-op $string-replace))
 
-(define (string-prefix? x y)
+(define ($string-prefix? x y)
   (match* (x y)
     [((? string?) (? string?)) (string-prefix? x y)]
     [(_ _) (expression @string-prefix? x y)]))
@@ -195,10 +190,10 @@
 (define-operator @string-prefix?
   #:identifier 'string-prefix?
   #:range T*->boolean? 
-  #:unsafe string-prefix?
-  #:safe (lift-op string-prefix?))
+  #:unsafe $string-prefix?
+  #:safe (lift-op $string-prefix?))
 
-(define (string-suffix? s p)
+(define ($string-suffix? s p)
   (if (and (string? s) (string? p))
       (string-suffix? s p)
       (expression @string-suffix? s p)))
@@ -206,8 +201,8 @@
 (define-operator @string-suffix?
   #:identifier 'string-suffix?
   #:range T*->boolean?
-  #:unsafe string-suffix?
-  #:safe (lift-op string-suffix?))
+  #:unsafe $string-suffix?
+  #:safe (lift-op $string-suffix?))
 
 ;(define-operator @string-ref ;TODO what can I do with this? Don't have char yet
   ;#:identifier 'string-ref
