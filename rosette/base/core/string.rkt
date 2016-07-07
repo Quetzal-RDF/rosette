@@ -180,7 +180,7 @@
      (type-cast @string? s caller)
      (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
      (type-cast @string? to caller)
-     #:all? all?))) ; Do I need to TC this if it's an any/c in Racket?
+     #:all? all?))) ; TODO do I need to TC this if it's an any/c in Racket?
 
 (define ($string-prefix? x y)
   (match* (x y)

@@ -58,6 +58,9 @@
      ($bv->int (enc v env) (bitvector-size (get-type v)))]  
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
+    [(expression (== @substring) str i j)
+     (define length (enc (@string-length str) env))
+     ($str.substr (enc str env) (enc i env) (- length (enc j env)))]
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
      (apply $op (for/list ([e es]) (enc e env)))]
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
@@ -97,7 +100,7 @@
   [@bvurem $bvurem] [@bvsrem $bvsrem] [@bvsmod $bvsmod] [@concat $concat]
   ; string
   [@string-append $str.++] [@string-length $str.len] [@int-to-str $int.to.str]
-  [@str-to-int $str.to.int] [@substring $str.substr] [@string-contains? $str.contains]
+  [@str-to-int $str.to.int] [@string-contains? $str.contains]
   [@string-replace $str.replace] [@string-prefix? $str.prefixof]
   [@string-suffix? $str.suffixof] [@string-at $str.at])
 
