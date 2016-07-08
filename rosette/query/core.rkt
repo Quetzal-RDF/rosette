@@ -27,7 +27,7 @@
 
 ; Returns true if evaluating all given formulas against 
 ; the provided solution returns the constant #t.
-(define (all-true? φs sol)  
+(define (all-true? φs sol)
   (and (sat? sol) (for/and ([φ φs]) (equal? #t (evaluate φ sol)))))
 
 ; Returns true if evaluating at least one of the given 
@@ -72,7 +72,7 @@
            (solver-maximize solver (for/list ([m maxs]) (hash-ref fmap m)))
            (let loop ()
              (define fsol (complete (solver-check solver) fmap))
-             (define sol (unfinitize fsol fmap)) 
+             (define sol (unfinitize fsol fmap))
              (cond 
                [(or (unsat? sol) (all-true? φs sol)) sol]
                [else (solver-assert solver (list (¬solution fsol)))

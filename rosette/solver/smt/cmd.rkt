@@ -9,6 +9,7 @@
          (only-in "../../base/core/bool.rkt" @boolean?)
          (only-in "../../base/core/bitvector.rkt" bitvector? bv)
          (only-in "../../base/core/real.rkt" @integer? @real?)
+         (only-in "../../base/core/string.rkt" @string?)
          "../solution.rkt")
 
 (provide encode encode-for-proof decode)
@@ -98,6 +99,7 @@
        [(? number?) (bv val t)]
        [(list _ (app symbol->string (regexp #px"bv(\\d+)" (list _ (app string->number n)))) _)
         (bv n t)])]
+    [(== @string?) val]
     [other other]))
 
 (define (decode-function type val)

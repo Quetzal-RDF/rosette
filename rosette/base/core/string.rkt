@@ -25,7 +25,7 @@
      (match v
        [(? string?) v]
        [(term _ (== self)) v]
-       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (values g u)] ;TODO
+       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (assert #f)] ;TODO was (values g u)
        [_ (assert #f)])) ;TODO
    (define (type-compress self force? ps) string/compress)])     
 

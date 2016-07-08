@@ -35,7 +35,7 @@
           (fprintf port "(model")
           (unless (null? bindings)
             (for ([binding bindings])
-              (fprintf port "\n [~a ~a]" (car binding) (cdr binding))))
+              (fprintf port "\n [~a ~s]" (car binding) (cdr binding))))
           (fprintf port ")"))]
        [#f (fprintf port "(unsat)")]
        [(list #f) (fprintf port "(core #f)")]
