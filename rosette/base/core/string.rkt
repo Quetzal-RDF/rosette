@@ -6,7 +6,7 @@
 (provide @string? @string-append @string-length @substring
          @string-contains? @string-prefix? @string-suffix?
          @string-replace @string->integer @integer->string
-         @string-at) ;@string-index-of)
+         @string-at @string-index-of)
 
 (define (string/equal? x y)
   (match* (x y)
@@ -215,16 +215,25 @@
   #:unsafe string-at
   #:safe (lift-op string-at @string? @integer?))
 
-; TODO index-of
-;(define (index-of s sub offset)
-  ;(if (@string-contains? s sub)
-     ; ()
-     ; (-1)))
+(define (index-of s sub offset)
+  (if (@string-contains? s sub)
+     (let ([len-sub (@string-length sub)] [len (@string-length s)])
+       (for/or ([i (+ (- len len-sub) 1)])
+         (if (@string-contains? (@substring s i (+ i len-sub)) sub)
+             i
+             #f)))
+     -1))
 
-;(define (string-index-of s sub [offset 0])
-  ;(if (and (string? s) (string? sub) (number? offset))
-      ;(index-of s sub offset)
-      ;(expression @string-index-of s sub offset)))
+(define (string-index-of s sub [offset 0])
+  (if (and (string? s) (string? sub) (number? offset))
+      (index-of s sub offset)
+      (expression @string-index-of s sub offset)))
+
+(define-operator @string-index-of
+  #:identifier 'string-index-of
+  #:range T*->integer?
+  #:unsafe string-index-of
+  #:safe (lift-op string-index-of @string? @string? @integer?))
 
 ; We are going to disable all mutation operations on strings. TODO? Do I need this, since I don't need those methods?
 
