@@ -60,10 +60,9 @@
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @substring) s i j)
-     (define length (enc (@string-length s) env))
-     ($str.substr (enc s env) (enc i env) (- length (enc j env)))]
-    ;[(expression (== @string-replace) s from to)
-     ;($str.replace)] TODO
+     ($str.substr (enc s env) (enc i env) (- (enc (@string-length s) env) (enc j env)))]
+    [(expression (== @string-replace) s from to all?)
+     ($str.replace s from to)]
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
      (apply $op (for/list ([e es]) (enc e env)))]
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
@@ -149,4 +148,4 @@
 (define ($bit v i n)
   (define bv0 ($bv 0 n))
   (define b (expt 2 i))
-  ($ite ($= bv0 ($bvand v ($bv b n))) 0 b)) 
+  ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))

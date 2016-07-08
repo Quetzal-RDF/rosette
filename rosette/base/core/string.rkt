@@ -154,7 +154,7 @@
   #:unsafe $substring
   #:safe (lift-op guarded-substring @string? @integer? @integer?))
 
-(define ($string-contains? s p) ; TODO refactor out this pattern
+(define ($string-contains? s p)
   (if (and (string? s) (string? p))
       (string-contains? s p)
       (expression @string-contains? s p)))
@@ -165,23 +165,26 @@
   #:unsafe $string-contains?
   #:safe (lift-op $string-contains?))
 
-(define ($string-replace s from to #:all? [all? #t])
+; TODO match racket semantics, but for now, don't support #t (unsure how to encode)
+(define ($string-replace s from to [all? #t])
   (if (and (string? s) (string? from) (string? to))
       (string-replace s from to #:all? all?)
-      (expression @string-replace s from to all?))) ; TODO need to deal with #:all? somehow
+      (expression @string-replace s from to all?)))
 
-(define-operator @string-replace
+(define-operator @string-replace 
   #:identifier 'string-replace
   #:range T*->string?
   #:unsafe $string-replace
   #:safe
-  (lambda (s from to #:all? [all? #t])
+  (lambda (s from to [all? #t]) ; TODO Racket takes keyword #:all? [all? #t]; see Emina's email
     (define caller 'string-replace)
-    ($string-replace
-     (type-cast @string? s caller)
-     (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
-     (type-cast @string? to caller)
-     #:all? all?))) ; TODO do I need to TC this if it's an any/c in Racket?
+    (if all?
+        (error caller "replace all not supported, use all? #f instead")
+        (($string-replace
+          (type-cast @string? s caller)
+          (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
+          (type-cast @string? to caller)
+          all?)))))
 
 (define ($string-prefix? x y)
   (match* (x y)
