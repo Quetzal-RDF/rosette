@@ -6,7 +6,8 @@
 (provide @string? @string-append @string-length @substring
          @string-contains? @string-prefix? @string-suffix?
          @string-replace @string->integer @integer->string
-         @string-at @string-index-of)
+         @string-at @string-index-of @string-set! @string-fill!
+         @string-copy!)
 
 (define (string/equal? x y)
   (match* (x y)
@@ -235,10 +236,10 @@
   #:unsafe string-index-of
   #:safe (lift-op string-index-of @string? @string? @integer?))
 
-; We are going to disable all mutation operations on strings. TODO? Do I need this, since I don't need those methods?
+; We are going to disable all mutation operations on strings.
 
-;(define disable-mutation (lambda xs (error 'string-set! "string mutation not supported")))
+(define disable-mutation (lambda xs (error 'string-set! "string mutation not supported")))
 
-;(define @string-set! (impersonate-procedure string-set! disable-mutation))    
-;(define @string-fill! (impersonate-procedure string-fill! disable-mutation))
-;(define @string-copy! (impersonate-procedure string-copy! disable-mutation))
+(define @string-set! (impersonate-procedure string-set! disable-mutation))    
+(define @string-fill! (impersonate-procedure string-fill! disable-mutation))
+(define @string-copy! (impersonate-procedure string-copy! disable-mutation))
