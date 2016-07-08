@@ -46,10 +46,11 @@
      union? union union-contents union-guards union-values
      union-filter in-union in-union* in-union-guards in-union-values
      ; core/string.rkt
-     @string? @string-append @string-length
-     @int-to-str @str-to-int @substring @string-contains?
-     @string-replace @string-prefix? @string-suffix?
-     @string-at
+     @string? @string-append @string-length @substring
+     @string-contains? @string-prefix? @string-suffix?
+     @string-replace @string->integer @integer->string
+     @string-at @string-index-of @string-set! @string-fill!
+     @string-copy!
      ; adt/box.rkt
      @box @box-immutable @box? @unbox @set-box!
      ; adt/list.rkt : Pair Constructors and Selectors
