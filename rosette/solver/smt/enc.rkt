@@ -20,7 +20,7 @@
                   @string-append @string-length @substring
                   @string-contains? @string-prefix? @string-suffix?
                   @string-replace @string->integer @integer->string
-                  @string-at))
+                  @string-at @string-index-of))
 
 (provide enc)
 
@@ -105,7 +105,8 @@
   [@string-append $str.++] [@string-length $str.len]
   [@integer->string $int.to.str] [@string->integer $str.to.int]
   [@string-contains? $str.contains] [@string-prefix? $str.prefixof]
-  [@string-suffix? $str.suffixof] [@string-at $str.at])
+  [@string-suffix? $str.suffixof] [@string-at $str.at]
+  [@string-index-of $str.indexof])
 
 ; TODO: for some of these (like replace), where racket and Z3 defaults differ, may
 ; need a better encoding, will revisit once basic code is working
