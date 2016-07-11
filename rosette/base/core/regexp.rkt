@@ -1,9 +1,12 @@
 #lang racket
 
 (require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "safe.rkt"
-         "string.rkt")
+         "string.rkt" "real.rkt")
 
-(provide @regexp? @regexp-quote @regexp-match-exact? @string->regexp)
+(provide @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
+         @regexp-all @regexp-none @regexp-concat ;@regexp-range TODO
+         @regexp-star @regexp-plus @regexp-opt @regexp-loop
+         @regexp-union @regexp-inter)
 
 (define (regexp/equal? x y)
   (match* (x y)
@@ -125,21 +128,109 @@
   #:safe (lift-op $regexp-match-exact? @regexp? @string?))
 
 ;re.allchar 	The regular expression accepting every string.
-; TODO 
+(define @regexp-all #rx".*")
 
-;re.nostr 	The regular expression rejecting every string.
-; TODO #rx"$.^"
+; Or do we need an operator? Like:
+;(define-operator @regexp-all
+  ;#:identifier 'regexp-all
+  ;#:range T*->regexp?
+  ;#:unsafe $regexp-all
+  ;#:safe (lift-op $regexp-all))
+
+;re.nostr 	The regular expression rejecting every string
+(define @regexp-none #rx"$.^")
 
 ; All of the heavy lifting for these will happen in enc.rkt:
 ;(re.range ch1 ch2) 	The range of characters between ch1 and ch2.
+; TODO encode characters as strings for now, but make sure strings actually are characters?
+; How do we do that symbolically? May need to also lift characters for this
+
 ;(re.++ r1 r2 r3) 	Concatenation of regular expressions.
+
+(define ($regexp-concat . rs) ; TODO if literal, pull out string and concat, otherwise expression
+  #f) 
+
+(define-operator @regexp-concat
+  #:identifier 'regexp-concat
+  #:range T*->regexp?
+  #:unsafe $regexp-concat
+  #:safe (lift-op $regexp-concat))
+
 ;(re.* r) 	Kleene star.
-;(re.+ r) 	Kleene plus.
+
+(define ($regexp-star . r) ; TODO if literal, add parens then concat with *, otherwise expression
+  #f) 
+
+(define-operator @regexp-star
+  #:identifier 'regexp-star
+  #:range T*->regexp?
+  #:unsafe $regexp-star
+  #:safe (lift-op $regexp-star))
+
+;(re.+ r) 	Kleene plus
+
+(define ($regexp-plus . r) ; TODO if literal, add parens then concat with +, otherwise expression
+  #f) 
+
+(define-operator @regexp-plus
+  #:identifier 'regexp-plus
+  #:range T*->regexp?
+  #:unsafe $regexp-plus
+  #:safe (lift-op $regexp-plus))
+
 ;(re.opt r) 	Zero or one use of r.
+
+(define ($regexp-opt . r) ; TODO if literal, add parens then concat with ?, otherwise expression
+  #f) 
+
+(define-operator @regexp-opt
+  #:identifier 'regexp-opt
+  #:range T*->regexp?
+  #:unsafe $regexp-opt
+  #:safe (lift-op $regexp-opt))
+
 ;((_ re.loop lo hi) r) 	from lo to hi number of repetitions of r.
+
+(define ($regexp-loop lo hi r) ; TODO ?
+  #f) 
+
+(define-operator @regexp-loop
+  #:identifier 'regexp-loop
+  #:range T*->regexp?
+  #:unsafe $regexp-loop
+  #:safe (lift-op $regexp-loop @integer? @integer? @regexp?))
+
 ;(re.union r1 r2) 	The union of regular languages.
+
+(define ($regexp-union r1 r2) ; TODO pull out both, stick | in between
+  #f) 
+
+(define-operator @regexp-union
+  #:identifier 'regexp-union
+  #:range T*->regexp?
+  #:unsafe $regexp-union
+  #:safe (lift-op $regexp-union))
+
 ;(re.inter r1 r2) 	The intersection of regular languages.
 
-;Will need to get string from regexp, and then do some magic
-; Maybe need some sort of macro for #rx syntax to just be (regexp)
+(define ($regexp-inter r1 r2) ; TODO how do I even do this? using union + negation?
+  #f) 
 
+(define-operator @regexp-inter
+  #:identifier 'regexp-inter
+  #:range T*->regexp?
+  #:unsafe $regexp-inter
+  #:safe (lift-op $regexp-inter))
+
+;Will need to get string from regexp, and then do some magic
+; To turn regexp into a string:
+
+; > (format "~s" #rx"foo")
+;"#rx\"foo\""
+
+; To get the string from there:
+; (define s (format "~s" #rx"foo"))
+; (match s
+;    [(regexp "#rx") (substring s 4 (- (string-length s) 1))])
+
+; Then you can convert this to a Z3 encoding as desired. Will only apply for literals thankfully
