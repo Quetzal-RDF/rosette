@@ -7,7 +7,7 @@
          @string-contains? @string-prefix? @string-suffix?
          @string-replace @string->integer @integer->string
          @string-at @string-index-of @string-set! @string-fill!
-         @string-copy!)
+         @string-copy! T*->string?)
 
 (define (string/equal? x y)
   (match* (x y)
