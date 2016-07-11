@@ -6,7 +6,7 @@
 (provide @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
          @regexp-all @regexp-none @regexp-concat ;@regexp-range TODO
          @regexp-star @regexp-plus @regexp-opt @regexp-loop
-         @regexp-union @regexp-inter)
+         @regexp-union @regexp-inter extract-string)
 
 (define (regexp/equal? x y)
   (match* (x y)
@@ -60,6 +60,13 @@
        [xs (safe-apply-n op xs ts)])]))
 
 (define T*->regexp? (const @regexp?))
+
+; Extract the string representation from a regexp literal
+(define (extract-string r)
+  (define s (format "~s" r))
+  (match s
+    [(regexp "#rx") (substring s 4 (- (string-length s) 1))]
+    [_ (@assert #f (thunk (raise-argument-error 'extract-string "expected a regexp?" s)))]))
 
 ;; ----------------- Regexp Operators ----------------- ;;
 
@@ -141,9 +148,12 @@
 (define @regexp-none #rx"$.^")
 
 ; All of the heavy lifting for these will happen in enc.rkt:
+
 ;(re.range ch1 ch2) 	The range of characters between ch1 and ch2.
 ; TODO encode characters as strings for now, but make sure strings actually are characters?
 ; How do we do that symbolically? May need to also lift characters for this
+; Or just if it's symbolic leave it be, since Z3 expects strings that represent characters,
+; and if it's literal check that it's a character
 
 ;(re.++ r1 r2 r3) 	Concatenation of regular expressions.
 
@@ -158,8 +168,10 @@
 
 ;(re.* r) 	Kleene star.
 
-(define ($regexp-star . r) ; TODO if literal, add parens then concat with *, otherwise expression
-  #f) 
+(define ($regexp-star r)
+  (if (regexp? r)
+      (regexp (@string-append "(" (extract-string r) ")*"))
+      (expression @regexp-star r)))
 
 (define-operator @regexp-star
   #:identifier 'regexp-star
@@ -169,8 +181,10 @@
 
 ;(re.+ r) 	Kleene plus
 
-(define ($regexp-plus . r) ; TODO if literal, add parens then concat with +, otherwise expression
-  #f) 
+(define ($regexp-plus r)
+  (if (regexp? r)
+      (regexp (@string-append "(" (extract-string r) ")+"))
+      (expression @regexp-plus r))) 
 
 (define-operator @regexp-plus
   #:identifier 'regexp-plus
@@ -180,8 +194,10 @@
 
 ;(re.opt r) 	Zero or one use of r.
 
-(define ($regexp-opt . r) ; TODO if literal, add parens then concat with ?, otherwise expression
-  #f) 
+(define ($regexp-opt r) 
+  (if (regexp? r)
+      (regexp (@string-append "(" (extract-string r) ")?"))
+      (expression @regexp-opt r))) 
 
 (define-operator @regexp-opt
   #:identifier 'regexp-opt
@@ -202,8 +218,10 @@
 
 ;(re.union r1 r2) 	The union of regular languages.
 
-(define ($regexp-union r1 r2) ; TODO pull out both, stick | in between
-  #f) 
+(define ($regexp-union r1 r2) 
+  (if (and (regexp? r1) (regexp? r2))
+      (regexp (@string-append (extract-string r1) "|" (extract-string r2)))
+      (expression @regexp-union r1 r2))) 
 
 (define-operator @regexp-union
   #:identifier 'regexp-union
@@ -221,16 +239,3 @@
   #:range T*->regexp?
   #:unsafe $regexp-inter
   #:safe (lift-op $regexp-inter))
-
-;Will need to get string from regexp, and then do some magic
-; To turn regexp into a string:
-
-; > (format "~s" #rx"foo")
-;"#rx\"foo\""
-
-; To get the string from there:
-; (define s (format "~s" #rx"foo"))
-; (match s
-;    [(regexp "#rx") (substring s 4 (- (string-length s) 1))])
-
-; Then you can convert this to a Z3 encoding as desired. Will only apply for literals thankfully
