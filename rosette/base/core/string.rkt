@@ -1,7 +1,7 @@
 #lang racket
 
 (require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
-         "merge.rkt" "safe.rkt")
+         "safe.rkt")
 
 (provide @string? @string-append @string-length @substring
          @string-contains? @string-prefix? @string-suffix?
@@ -26,7 +26,7 @@
        [(? string?) v]
        [(term _ (== self)) v]
        [(union : [g (and (app type-of (== @string?)) u)] _ ...) (assert #f)] ;TODO was (values g u)
-       [_ (assert #f)])) ;TODO
+       [_ (@assert #f (thunk (raise-argument-error caller "expected a string?" v)))])) 
    (define (type-compress self force? ps) string/compress)])     
 
 ; The value of the force? parameter is ignored since 
@@ -246,3 +246,5 @@
 (define @string-set! (impersonate-procedure string-set! disable-mutation))    
 (define @string-fill! (impersonate-procedure string-fill! disable-mutation))
 (define @string-copy! (impersonate-procedure string-copy! disable-mutation))
+
+; TODO tests
