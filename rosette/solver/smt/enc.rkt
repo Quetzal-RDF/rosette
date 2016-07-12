@@ -167,6 +167,5 @@
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
 
 (define (encode-regexp-literal r)
-  r) ;TODO
-  ;(match (object-name r)
-    ;[(regexp "#rx.*|.*")]))
+  (raise-syntax-error #f "provided regexp syntax not yet supported;\n" (object-name r)) ; TODO use parse-regexp.rkt 
+)
