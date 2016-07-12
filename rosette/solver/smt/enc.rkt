@@ -20,7 +20,12 @@
                   @string-append @string-length @substring
                   @string-contains? @string-prefix? @string-suffix?
                   @string-replace @string->integer @integer->string
-                  @string-at @string-index-of))
+                  @string-at @string-index-of)
+         (only-in "../../base/core/regexp.rkt"
+                  @regexp @regexp-quote @regexp-match-exact? @string->regexp
+                  @regexp-all @regexp-none @regexp-concat @regexp-range
+                  @regexp-star @regexp-plus @regexp-opt @regexp-loop
+                  @regexp-union @regexp-inter))
 
 (provide enc)
 
@@ -67,6 +72,10 @@
      (apply $op (for/list ([e es]) (enc e env)))]
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
 
+; TODO @regexp-match-exact to str.in.re: Switch arguments
+; TODO @regexp-concat to re.++: Squish to 3 args
+; TODO @regexp-loop to re.loop: Format arguments in the weird expected way
+
 (define (enc-const v env) (ref! env v))
 
 (define (enc-lit v env)
@@ -77,7 +86,8 @@
     [(? real?) (if (exact? v) ($/ (numerator v) (denominator v)) v)]
     [(bv lit t) ($bv lit (bitvector-size t))]
     [(? string?) v]
-    [_ (error 'enc "expected a boolean?, integer?, real?, or bitvector?, given ~a" v)]))
+    [(? regexp?) (encode-regexp-literal v)] ; TODO, need to encode the actual regex literal
+    [_ (error 'enc "expected a boolean?, integer?, real?, bitvector?, string?, or regexp? given ~a" v)]))
 
 (define-syntax define-encoder
   (syntax-rules ()
@@ -105,7 +115,13 @@
   [@integer->string $int.to.str] [@string->integer $str.to.int]
   [@string-contains? $str.contains] [@string-prefix? $str.prefixof]
   [@string-suffix? $str.suffixof] [@string-at $str.at]
-  [@string-index-of $str.indexof])
+  [@string-index-of $str.indexof]
+  ; regex
+  [@string->regexp $str.to.re] [@regexp-range $re.range]
+  [@regexp-star $re.*] [@regexp-plus $re.+] [@regexp-opt $re.opt]
+  [@regexp-union $re.union] [@regexp-inter $re.inter])
+
+; TODO @regexp @regexp-quote @regexp-all @regexp-nostr
 
 ; TODO: for some of these (like replace), where racket and Z3 defaults differ, may
 ; need a better encoding, will revisit once basic code is working
@@ -149,3 +165,8 @@
   (define bv0 ($bv 0 n))
   (define b (expt 2 i))
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
+
+(define (encode-regexp-literal r)
+  r) ;TODO
+  ;(match (object-name r)
+    ;[(regexp "#rx.*|.*")]))
