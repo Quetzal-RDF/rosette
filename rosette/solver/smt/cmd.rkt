@@ -10,6 +10,7 @@
          (only-in "../../base/core/bitvector.rkt" bitvector? bv)
          (only-in "../../base/core/real.rkt" @integer? @real?)
          (only-in "../../base/core/string.rkt" @string?)
+         (only-in "../../base/core/regexp.rkt" @regexp?)
          "../solution.rkt")
 
 (provide encode encode-for-proof decode)
@@ -100,6 +101,7 @@
        [(list _ (app symbol->string (regexp #px"bv(\\d+)" (list _ (app string->number n)))) _)
         (bv n t)])]
     [(== @string?) val]
+    [(== @regexp?) val] ; TODO, not yet implemented
     [other other]))
 
 (define (decode-function type val)

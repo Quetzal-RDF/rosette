@@ -1,14 +1,15 @@
 #lang racket
 
 (require racket/syntax 
-         (only-in "smtlib2.rkt" Int Real Bool BitVec String
+         (only-in "smtlib2.rkt" Int Real Bool BitVec String RegEx
                   declare-const declare-fun define-const assert
                   [< smt/<] [<= smt/<=]) 
          "../../base/core/term.rkt" 
          (only-in "../../base/core/bool.rkt" @boolean?)
          (only-in "../../base/core/bitvector.rkt" bitvector? bitvector-size)
          (only-in "../../base/core/real.rkt" @integer? @real?)
-         (only-in "../../base/core/string.rkt" @string?))
+         (only-in "../../base/core/string.rkt" @string?)
+         (only-in "../../base/core/regexp.rkt" @regexp?))
 
 (provide (rename-out [make-hash env]) ref! clear!)
 
@@ -20,6 +21,7 @@
     [(== @integer?) Int]
     [(== @real?) Real]
     [(== @string?) String]
+    [(== @regexp?) RegEx]
     [(? bitvector? t) (BitVec (bitvector-size t))]
     [_ (error 'smt-type "expected primitive-solvable? type, given ~a" t)]))
 

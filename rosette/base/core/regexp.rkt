@@ -247,7 +247,7 @@
 ;((_ re.loop lo hi) r) 	from lo to hi number of repetitions of r.
 
 (define ($regexp-loop lo hi r) ; TODO ? need pregexp for this, revisit later
-  #f) 
+  (assert "#f")) 
 
 (define-operator @regexp-loop
   #:identifier 'regexp-loop
@@ -274,7 +274,7 @@
 ; Then modify the match operator/other operators to check for intersection case?
 ; Will revisit later
 (define ($regexp-inter r1 r2) 
-  #f) 
+  (assert "#f")) 
 
 (define-operator @regexp-inter
   #:identifier 'regexp-inter

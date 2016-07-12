@@ -119,3 +119,11 @@
   str.indexof str.at str.contains
   str.prefixof str.suffixof str.replace
   str.to.int int.to.str)
+
+; RegEx theory
+(define RegEx `(RegEx String))
+(define-ops
+  str.to.re str.in.re
+  re.allchar re.nostr re.range
+  re.++ re.* re.+ re.opt re.loop
+  re.union re.inter)
