@@ -10,6 +10,8 @@
          parser-tools/cfg-parser
          (prefix-in $ "../../solver/smt/smtlib2.rkt"))
 
+(provide parse-re)
+
 (define-tokens res (LIT))
 
 (define-empty-tokens ops (UNION ? * + LP RP LB RB LBN ANY ^ $ LMODE : FIRST - LOOKE LOOKN LOOKP LOOKNP i Di s Ds m Dm ESC EOF))
@@ -152,14 +154,14 @@
      ((m) "m")
      ((:) ":")))))
 
-(define (parse re)
+(define (parse-re re)
   (let ((input (open-input-string (object-name re))))
         (regexp-parser (lambda () (regexp-lexer input)))))
 
 ; Test:
-;(parse #rx"a|b")
-;(parse #rx"[a-zA-Z]")
+;(parse-re #rx"a|b")
+;(parse-re #rx"[a-zA-Z]")
 
 ; This encoding is naive for now
-;(parse #rx"[a-zA-Z]*foo+")
+;(parse-re #rx"[a-zA-Z]*foo+")
 

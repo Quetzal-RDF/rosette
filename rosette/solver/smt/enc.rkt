@@ -1,6 +1,7 @@
 #lang racket
 
-(require "env.rkt" 
+(require "env.rkt"
+         "../../lib/util/parse-regexp.rkt"
          (prefix-in $ "smtlib2.rkt") 
          (only-in "../../base/core/term.rkt" expression expression? constant? get-type @app)
          (only-in "../../base/core/polymorphic.rkt" ite ite* =? guarded-test guarded-value)
@@ -67,12 +68,13 @@
     [(expression (== @substring) s i j)
      ($str.substr (enc s env) (enc i env) (- (enc (@string-length s) env) (enc j env)))]
     [(expression (== @string-replace) s from to all?)
-     ($str.replace s from to)]
+     ($str.replace (enc s env) (enc from env) (enc to env))]
+    [(expression (== @regexp-match-exact?) r s)
+     ($str.in.re (enc s env) (enc r env))]
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
      (apply $op (for/list ([e es]) (enc e env)))]
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
 
-; TODO @regexp-match-exact to str.in.re: Switch arguments
 ; TODO @regexp-concat to re.++: Squish to 3 args
 ; TODO @regexp-loop to re.loop: Format arguments in the weird expected way
 
@@ -86,7 +88,7 @@
     [(? real?) (if (exact? v) ($/ (numerator v) (denominator v)) v)]
     [(bv lit t) ($bv lit (bitvector-size t))]
     [(? string?) v]
-    [(? regexp?) (encode-regexp-literal v)] ; TODO, need to encode the actual regex literal
+    [(? regexp?) (parse-re v)]
     [_ (error 'enc "expected a boolean?, integer?, real?, bitvector?, string?, or regexp? given ~a" v)]))
 
 (define-syntax define-encoder
@@ -165,7 +167,3 @@
   (define bv0 ($bv 0 n))
   (define b (expt 2 i))
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
-
-(define (encode-regexp-literal r)
-  (raise-syntax-error #f "provided regexp syntax not yet supported;\n" (object-name r)) ; TODO use parse-regexp.rkt 
-)
