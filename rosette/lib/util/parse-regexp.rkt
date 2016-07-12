@@ -79,15 +79,15 @@
      ((ANY) (unsupported-regexp-error)) ; TODO any single character; somehow need both allchar and length is one, but can't nest that in an re
      ((^) (unsupported-regexp-error)) ; TODO start
      (($) (unsupported-regexp-error)) ; TODO finish
-     ((lit) $1)
+     ((lit) ($str.to.re $1))
      ((LMODE mode : re RP) (unsupported-regexp-error)) ; TODO Match ‹regexp› using ‹mode›
      ((FIRST re RP) $2) ; TODO since we don't support match, we don't care if it's first, but may eventually
      ((look) $1)
      ((LMODE tst pces UNION pces RP) (unsupported-regexp-error)) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
      ((LMODE tst pces RP) (unsupported-regexp-error))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
     (rng
-     ((RB) ($str.to.re "]"))
-     ((-) ($str.to.re "-"))
+     ((RB) "]")
+     ((-) "-")
      ((mrng) $1)
      ((mrng -) ($re.union $1 ($str.to.re "-"))))
     (mrng
@@ -99,7 +99,7 @@
      ((rilit - rilit) ($re.range $1 $3))
      ((lirng lrng) ($re.union $1 $2)))
     (lrng
-     ((^) ($str.to.re "^"))
+     ((^) "^")
      ((rlit - rlit) ($re.range $1 $3))
      ((^ lrng) ($re.union ($str.to.re "^") $2))
      ((lirng) $1))
@@ -120,43 +120,46 @@
      ((mode Ds) (unsupported-regexp-error))
      ((mode Dm) (unsupported-regexp-error)))
     (lit
-     ((LIT) ($str.to.re $1))
-     ((i) ($str.to.re "i"))
-     ((s) ($str.to.re "s"))
-     ((m) ($str.to.re "m"))
-     ((-) ($str.to.re "-"))
-     ((RB) ($str.to.re "]"))
-     ((:) ($str.to.re ":"))
-     ((ESC alit) ($str.to.re (string-append "\\" $2))))
+     ((LIT) $1)
+     ((i) "i")
+     ((s) "s")
+     ((m) "m")
+     ((-) "-")
+     ((RB) "]")
+     ((:) ":")
+     ((ESC alit) (string-append "\\" $2)))
     (alit
      ((rilit) $1)
-     ((RB) ($str.to.re "]"))
-     ((-) ($str.to.re "-"))
-     ((^) ($str.to.re "^")))
+     ((RB) "]")
+     ((-) "-")
+     ((^) "^"))
     (rlit
      ((rilit) $1)
-     ((^) ($str.to.re "^")))
+     ((^) "^"))
     (rilit
-     ((LIT) ($str.to.re $1))
-     ((LP) ($str.to.re "("))
-     ((RP) ($str.to.re ")"))
-     ((*) ($str.to.re "*"))
-     ((+) ($str.to.re "+"))
-     ((?) ($str.to.re "?"))
-     ((LB) ($str.to.re "["))
-     ((ANY) ($str.to.re "."))
-     ((ESC) ($str.to.re "\\"))
-     ((UNION) ($str.to.re "|"))
-     ((i) ($str.to.re "i"))
-     ((s) ($str.to.re "s"))
-     ((m) ($str.to.re "m"))
-     ((:) ($str.to.re ":"))))))
+     ((LIT) $1)
+     ((LP) "(")
+     ((RP) ")")
+     ((*) "*")
+     ((+) "+")
+     ((?) "?")
+     ((LB) "[")
+     ((ANY) ".")
+     ((ESC) "\\")
+     ((UNION) "|")
+     ((i) "i")
+     ((s) "s")
+     ((m) "m")
+     ((:) ":")))))
+
+(define (parse re)
+  (let ((input (open-input-string (object-name re))))
+        (regexp-parser (lambda () (regexp-lexer input)))))
 
 ; Test:
-;(define (lex-this lexer input) (lambda () (lexer input)))
+;(parse #rx"a|b")
+;(parse #rx"[a-zA-Z]")
 
-;(let ((input (open-input-string "a|b")))
-  ;(regexp-parser (lex-this regexp-lexer input)))
+; This encoding is naive for now
+;(parse #rx"[a-zA-Z]*foo+")
 
-;(let ((input (open-input-string "[a-zA-Z]")))
-  ;(regexp-parser (lex-this regexp-lexer input)))
