@@ -4,7 +4,7 @@
          "string.rkt" "real.rkt")
 
 (provide @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
-         @regexp-all @regexp-none @regexp-concat ;@regexp-range TODO
+         @regexp-all @regexp-none @regexp-concat @regexp-range
          @regexp-star @regexp-plus @regexp-opt @regexp-loop
          @regexp-union @regexp-inter extract-string)
 
@@ -70,7 +70,8 @@
 
 ;; ----------------- Regexp Operators ----------------- ;;
 
-; Comments are temporary, for development purposes
+; Current comments are temporary, for development purposes
+; Will remove and replace with more informative ones later (TODO)
 
 ; Things people may want that we don't need directly for Z3:
 ; regexp-match
@@ -150,10 +151,29 @@
 ; All of the heavy lifting for these will happen in enc.rkt:
 
 ;(re.range ch1 ch2) 	The range of characters between ch1 and ch2.
-; TODO encode characters as strings for now, but make sure strings actually are characters?
-; How do we do that symbolically? May need to also lift characters for this
-; Or just if it's symbolic leave it be, since Z3 expects strings that represent characters,
-; and if it's literal check that it's a character
+(define (assert-string-char ch)
+  (cond
+    [(and (string? ch) (not (= (string-length ch) 1)))
+     (@assert #f (thunk (raise-argument-error 'regexp-range
+                                              "expected string? of length 1"
+                                              ch)))]))
+    
+
+(define ($regexp-range ch1 ch2)
+  (if (and (string? ch1) (string? ch2))
+      (regexp (@string-append "[" ch1 "-" ch2 "]"))
+      (expression @regexp-range ch1 ch2)))
+
+(define ($guarded-regexp-range ch1 ch2)
+  (assert-string-char ch1)
+  (assert-string-char ch2)
+  ($regexp-range ch1 ch2))
+
+(define-operator @regexp-range
+  #:identifier 'regexp-range
+  #:range T*->regexp?
+  #:unsafe $regexp-range
+  #:safe (lift-op $guarded-regexp-range @string? @string?))
 
 ;(re.++ r1 r2 r3) 	Concatenation of regular expressions.
 
@@ -230,8 +250,11 @@
   #:safe (lift-op $regexp-union))
 
 ;(re.inter r1 r2) 	The intersection of regular languages.
-
-(define ($regexp-inter r1 r2) ; TODO how do I even do this? using union + negation?
+; TODO how do I even do this? using union + negation?
+; Or move into a struct for literals?
+; Then modify the match operator/other operators to check for intersection case?
+; Will revisit later
+(define ($regexp-inter r1 r2) 
   #f) 
 
 (define-operator @regexp-inter
