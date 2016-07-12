@@ -158,7 +158,6 @@
                                               "expected string? of length 1"
                                               ch)))]))
     
-
 (define ($regexp-range ch1 ch2)
   (if (and (string? ch1) (string? ch2))
       (regexp (@string-append "[" ch1 "-" ch2 "]"))
@@ -176,13 +175,33 @@
   #:safe (lift-op $guarded-regexp-range @string? @string?))
 
 ;(re.++ r1 r2 r3) 	Concatenation of regular expressions.
+; Not sure why string-append was so complex to begin with, but using what's already done anyways
+; TODO revisit to simplify later
+(define ($regexp-concat-simplify rs)
+  (match rs
+    [(list) rs]
+    [(list _) rs]
+    [(list-rest (? regexp? r) ..2 rest)
+     (list* (regexp (apply string-append (map extract-string r))) ($regexp-concat-simplify rest))]
+    [(list r rest ...) (list* r ($regexp-concat-simplify rest))]))
 
 (define ($regexp-concat . rs) ; TODO if literal, pull out string and concat, otherwise expression
-  #f) 
+  (match rs
+    [`() @regexp-none]
+    [(list r1) r1]
+    [(list r1 r2)
+     (match* (r1 r2)
+       [((? regexp?) (? regexp?))
+        (regexp (string-append (extract-string r1) (extract-string r2)))]
+       [(_ _) (expression @regexp-concat r1 r2)])]
+    [_
+     (match ($regexp-concat-simplify rs)
+       [(list r) r]
+       [rs (apply expression @regexp-concat rs)])])) 
 
 (define-operator @regexp-concat
   #:identifier 'regexp-concat
-  #:range T*->regexp?
+  #:range T*->T
   #:unsafe $regexp-concat
   #:safe (lift-op $regexp-concat))
 
@@ -227,7 +246,7 @@
 
 ;((_ re.loop lo hi) r) 	from lo to hi number of repetitions of r.
 
-(define ($regexp-loop lo hi r) ; TODO ?
+(define ($regexp-loop lo hi r) ; TODO ? need pregexp for this, revisit later
   #f) 
 
 (define-operator @regexp-loop
