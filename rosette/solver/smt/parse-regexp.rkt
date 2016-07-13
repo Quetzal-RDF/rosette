@@ -8,7 +8,7 @@
 (require parser-tools/lex
          parser-tools/lex-sre
          parser-tools/cfg-parser
-         (prefix-in $ "../../solver/smt/smtlib2.rkt"))
+         (prefix-in $ "smtlib2.rkt"))
 
 (provide parse-re)
 

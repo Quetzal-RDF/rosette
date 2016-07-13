@@ -1,7 +1,7 @@
 #lang racket
 
 (require "env.rkt"
-         "../../lib/util/parse-regexp.rkt"
+         "parse-regexp.rkt"
          (prefix-in $ "smtlib2.rkt") 
          (only-in "../../base/core/term.rkt" expression expression? constant? get-type @app)
          (only-in "../../base/core/polymorphic.rkt" ite ite* =? guarded-test guarded-value)
