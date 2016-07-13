@@ -122,8 +122,9 @@
 
 ; RegEx theory
 (define RegEx `(RegEx String))
+(define re.allchar 're.allchar)
+(define re.nostr 're.nostr)
 (define-ops
-  str.to.re str.in.re
-  re.allchar re.nostr re.range
+  str.to.re str.in.re re.range
   re.++ re.* re.+ re.opt re.loop
   re.union re.inter)

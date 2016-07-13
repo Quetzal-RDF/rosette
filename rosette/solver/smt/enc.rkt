@@ -88,7 +88,11 @@
     [(? real?) (if (exact? v) ($/ (numerator v) (denominator v)) v)]
     [(bv lit t) ($bv lit (bitvector-size t))]
     [(? string?) v]
-    [(? regexp?) (parse-re v)]
+    [(? regexp?)
+     (cond
+       [(equal? v @regexp-all) $re.allchar]
+       [(equal? v @regexp-none) $re.nostr]
+       [else (parse-re v)])]
     [_ (error 'enc "expected a boolean?, integer?, real?, bitvector?, string?, or regexp? given ~a" v)]))
 
 (define-syntax define-encoder
@@ -123,7 +127,7 @@
   [@regexp-star $re.*] [@regexp-plus $re.+] [@regexp-opt $re.opt]
   [@regexp-union $re.union] [@regexp-inter $re.inter])
 
-; TODO @regexp @regexp-quote @regexp-all @regexp-nostr
+; TODO @regexp @regexp-quote
 
 ; TODO: for some of these (like replace), where racket and Z3 defaults differ, may
 ; need a better encoding, will revisit once basic code is working
