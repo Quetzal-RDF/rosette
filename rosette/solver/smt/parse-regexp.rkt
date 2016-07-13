@@ -88,8 +88,8 @@
      ((LMODE tst pces UNION pces RP) (unsupported-regexp-error)) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
      ((LMODE tst pces RP) (unsupported-regexp-error))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
     (rng
-     ((RB) "]")
-     ((-) "-")
+     ((RB) ($str.to.re "]"))
+     ((-) ($str.to.re "-"))
      ((mrng) $1)
      ((mrng -) ($re.union $1 ($str.to.re "-"))))
     (mrng
@@ -97,11 +97,11 @@
      ((- lrng) ($re.union $2 ($str.to.re "-")))
      ((lirng) $1))
     (lirng
-     ((rilit) $1)
+     ((rilit) ($str.to.re $1))
      ((rilit - rilit) ($re.range $1 $3))
      ((lirng lrng) ($re.union $1 $2)))
     (lrng
-     ((^) "^")
+     ((^) ($str.to.re "^"))
      ((rlit - rlit) ($re.range $1 $3))
      ((^ lrng) ($re.union ($str.to.re "^") $2))
      ((lirng) $1))
@@ -164,4 +164,3 @@
 
 ; This encoding is naive for now
 ;(parse-re #rx"[a-zA-Z]*foo+")
-
