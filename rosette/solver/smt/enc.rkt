@@ -20,8 +20,8 @@
          (only-in "../../base/core/string.rkt"
                   @string-append @string-length @substring
                   @string-contains? @string-prefix? @string-suffix?
-                  @string-replace @string->integer @integer->string
-                  @string-at @string-index-of)
+                  @string->integer @integer->string
+                  @string-at @string-index-of @string-replace-internal)
          (only-in "../../base/core/regexp.rkt"
                   @regexp @regexp-quote @regexp-match-exact? @string->regexp
                   @regexp-all @regexp-none @regexp-concat @regexp-range
@@ -67,7 +67,7 @@
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @substring) s i j)
      ($str.substr (enc s env) (enc i env) (- (enc (@string-length s) env) (enc j env)))]
-    [(expression (== @string-replace) s from to all?)
+    [(expression (== @string-replace-internal) s from to all?)
      ($str.replace (enc s env) (enc from env) (enc to env))]
     [(expression (== @regexp-match-exact?) r s)
      ($str.in.re (enc s env) (enc r env))]

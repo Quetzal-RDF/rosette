@@ -1,11 +1,13 @@
 #lang racket
 
-(require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
-         "safe.rkt")
+(require racket/splicing
+         "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
+         "safe.rkt" "../adt/seq.rkt")
 
 (provide @string? @string-append @string-length @substring
          @string-contains? @string-prefix? @string-suffix?
-         @string-replace @string->integer @integer->string
+         @string-replace @string-replace-internal
+         @string->integer @integer->string
          @string-at @string-index-of @string-set! @string-fill!
          @string-copy! T*->string?)
 
@@ -169,22 +171,25 @@
 (define ($string-replace s from to [all? #t])
   (if (and (string? s) (string? from) (string? to))
       (string-replace s from to #:all? all?)
-      (expression @string-replace s from to all?)))
+      (expression @string-replace-internal s from to all?)))
 
-(define-operator @string-replace 
+(define-operator @string-replace-internal
   #:identifier 'string-replace
   #:range T*->string?
   #:unsafe $string-replace
   #:safe
-  (lambda (s from to [all? #t]) ; TODO Racket takes keyword #:all? [all? #t]; see Emina's email
+  (lambda (s from to [all? #t])
     (define caller 'string-replace)
     (if all?
         (error caller "replace all not supported, use all? #f instead")
-        (($string-replace
+        ($string-replace
           (type-cast @string? s caller)
           (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
           (type-cast @string? to caller)
-          all?)))))
+          all?))))
+
+(define (@string-replace s from to #:all? [all? #t])
+  (@string-replace-internal s from to all?))
 
 (define ($string-prefix? x y)
   (match* (x y)
