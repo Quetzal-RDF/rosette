@@ -29,7 +29,7 @@
        [(? regexp?) v]
        [(term _ (== self)) v]
        [(union : [g (and (app type-of (== @regexp?)) u)] _ ...) (assert #f)] ;TODO don't know what to do here
-       [_ (@assert #f (thunk (raise-argument-error caller "expected a regexp?" v)))])) 
+       [_ (assert #f (thunk (raise-argument-error caller "expected a regexp?" v)))])) 
    (define (type-compress self force? ps) regexp/compress)])     
 
 ; TODO not sure what I need here, for now just using generic
@@ -81,6 +81,9 @@
 ; regexp-replaces
 ; regexp-replace-quote
 
+(define @regexp-all #rx".*")
+(define @regexp-none #rx"$.^")
+
 (define ($regexp str)
   (if (string? str)
       (regexp str)
@@ -129,23 +132,10 @@
   #:unsafe $regexp-match-exact?
   #:safe (lift-op $regexp-match-exact? @regexp? @string?))
 
-;re.allchar 	The regular expression accepting every string.
-(define @regexp-all #rx".*")
-
-; Or do we need an operator? Like:
-;(define-operator @regexp-all
-  ;#:identifier 'regexp-all
-  ;#:range T*->regexp?
-  ;#:unsafe $regexp-all
-  ;#:safe (lift-op $regexp-all))
-
-;re.nostr 	The regular expression rejecting every string
-(define @regexp-none #rx"$.^")
-
 (define (assert-string-char ch)
   (cond
     [(and (string? ch) (not (= (string-length ch) 1)))
-     (@assert #f (thunk (raise-argument-error 'regexp-range
+     (assert #f (thunk (raise-argument-error 'regexp-range
                                               "expected string? of length 1"
                                               ch)))]))
     

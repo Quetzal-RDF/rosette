@@ -8,7 +8,8 @@
 (require parser-tools/lex
          parser-tools/lex-sre
          parser-tools/cfg-parser
-         (prefix-in $ "smtlib2.rkt"))
+         (prefix-in $ "smtlib2.rkt")
+         (only-in "../../base/core/safe.rkt" assert))
 
 (provide parse-re)
 
@@ -49,9 +50,10 @@
    (any-char (token-LIT lexeme))
    ((eof) (token-EOF))))
 
-; TODO better error messaging
-(define (unsupported-regexp-error)
-  (error (raise-syntax-error #f "provided regexp syntax not yet supported;\n")))
+(define (unsupported-regexp-error [token-lit #f])
+  (if token-lit
+      (assert #f (thunk (error 'parse-re "provided regexp literal syntax ~a not yet supported" token-lit)))
+      (assert #f (thunk (error 'parse-re "provided regexp literal syntax not yet supported")))))
 
 (define regexp-parser
   (cfg-parser
@@ -77,16 +79,16 @@
     (atom
      ((LP re RP) $2)
      ((LB rng RB) $2) 
-     ((LBN rng RB) (unsupported-regexp-error)) ; TODO complement not yet supported in Z3, can't do algebraically, may need to bump up and handle earlier in enc as not
-     ((ANY) (unsupported-regexp-error)) ; TODO any single character; somehow need both allchar and length is one, but can't nest that in an re
-     ((^) (unsupported-regexp-error)) ; TODO start
-     (($) (unsupported-regexp-error)) ; TODO finish
+     ((LBN rng RB) (unsupported-regexp-error "[^<rng>]")) ; TODO complement not yet supported in Z3, can't do algebraically, may need to bump up and handle earlier in enc as not
+     ((ANY) (unsupported-regexp-error ".")) ; TODO any single character; somehow need both allchar and length is one, but can't nest that in an re
+     ((^) (unsupported-regexp-error "^")) ; TODO start
+     (($) (unsupported-regexp-error "$")) ; TODO finish
      ((lit) ($str.to.re $1))
-     ((LMODE mode : re RP) (unsupported-regexp-error)) ; TODO Match ‹regexp› using ‹mode›
+     ((LMODE mode : re RP) (unsupported-regexp-error "(?<mode>:<re>)")) ; TODO Match ‹regexp› using ‹mode›
      ((FIRST re RP) $2) ; TODO since we don't support match, we don't care if it's first, but may eventually
      ((look) $1)
-     ((LMODE tst pces UNION pces RP) (unsupported-regexp-error)) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
-     ((LMODE tst pces RP) (unsupported-regexp-error))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
+     ((LMODE tst pces UNION pces RP) (unsupported-regexp-error "(?<test><pces>|<pces>)")) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
+     ((LMODE tst pces RP) (unsupported-regexp-error "(?<test><pces>)"))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
     (rng
      ((RB) ($str.to.re "]"))
      ((-) ($str.to.re "-"))
@@ -107,20 +109,20 @@
      ((lirng) $1))
     (look
      ((LOOKE re RP) $2)
-     ((LOOKN re RP) (unsupported-regexp-error)) ; TODO negation not yet supported in Z3, may need to bump up and handle earlier in enc
-     ((LOOKP re RP) (unsupported-regexp-error)) ; TODO Match if ‹regexp› matches preceding (what does this mean?)
-     ((LOOKNP re RP) (unsupported-regexp-error))) ; TODO negation not yet supported in Z3, may need to bump up and handle earlier in enc
+     ((LOOKN re RP) (unsupported-regexp-error "(?!<re>)")) ; TODO negation not yet supported in Z3, may need to bump up and handle earlier in enc
+     ((LOOKP re RP) (unsupported-regexp-error "(?<=<re>)")) ; TODO Match if ‹regexp› matches preceding (what does this mean?)
+     ((LOOKNP re RP) (unsupported-regexp-error "(?<!<re>)"))) ; TODO negation not yet supported in Z3, may need to bump up and handle earlier in enc
     (tst
      ((LP LIT RP) (unsupported-regexp-error)) ; TODO true if Nth ( has a match
      ((look) $1))
     (mode
-     (() (unsupported-regexp-error))
-     ((mode i) (unsupported-regexp-error))
-     ((mode s) (unsupported-regexp-error))
-     ((mode m) (unsupported-regexp-error))
-     ((mode Di) (unsupported-regexp-error))
-     ((mode Ds) (unsupported-regexp-error))
-     ((mode Dm) (unsupported-regexp-error)))
+     (() (unsupported-regexp-error "(?<mode>:<re>)"))
+     ((mode i) (unsupported-regexp-error "(?<mode>:<re>)"))
+     ((mode s) (unsupported-regexp-error "(?<mode>:<re>)"))
+     ((mode m) (unsupported-regexp-error "(?<mode>:<re>)"))
+     ((mode Di) (unsupported-regexp-error "(?<mode>:<re>)"))
+     ((mode Ds) (unsupported-regexp-error "(?<mode>:<re>)"))
+     ((mode Dm) (unsupported-regexp-error "(?<mode>:<re>)")))
     (lit
      ((LIT) $1)
      ((i) "i")
