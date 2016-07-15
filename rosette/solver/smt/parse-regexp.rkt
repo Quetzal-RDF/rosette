@@ -131,7 +131,7 @@
      ((-) "-")
      ((RB) "]")
      ((:) ":")
-     ((ESC alit) (string-append "\\" $2)))
+     ((ESC alit) $2))
     (alit
      ((rilit) $1)
      ((RB) "]")
