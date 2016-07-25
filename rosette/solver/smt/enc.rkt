@@ -66,7 +66,7 @@
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @substring) s i j)
-     ($str.substr (enc s env) (enc i env) (- (enc (@string-length s) env) (enc j env)))]
+     ($str.substr (enc s env) (enc i env) ($- (enc j env) (enc i env)))]
     [(expression (== @string-replace-internal) s from to all?)
      ($str.replace (enc s env) (enc from env) (enc to env))]
     [(expression (== @regexp-match-exact?) r s)
