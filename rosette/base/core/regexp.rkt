@@ -8,10 +8,6 @@
          @regexp-star @regexp-plus @regexp-opt @regexp-loop
          @regexp-union @regexp-inter)
 
-; TODO: There is a weird bug wherein consecutively calling Z3 with different constraints
-; that both include regexes results in the second being UNSAT. Not sure if it's my code or
-; Z3, but need to investigate before merging this.
-
 (define (regexp/equal? x y)
   (match* (x y)
     [((? regexp?) (? regexp?)) (equal? x y)]
