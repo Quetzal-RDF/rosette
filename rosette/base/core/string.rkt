@@ -27,7 +27,7 @@
      (match v
        [(? string?) v]
        [(term _ (== self)) v]
-       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (assert #f)] ;TODO was (values g u)
+       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (values g u)] ;TODO was (values g u)
        [_ (@assert #f (thunk (raise-argument-error caller "expected a string?" v)))])) 
    (define (type-compress self force? ps) string/compress)])     
 
