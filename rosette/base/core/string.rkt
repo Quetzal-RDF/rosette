@@ -27,8 +27,10 @@
      (match v
        [(? string?) v]
        [(term _ (== self)) v]
-       [(union : [g (and (app type-of (== @string?)) u)] _ ...) (values g u)] ;TODO was (values g u)
-       [_ (@assert #f (thunk (raise-argument-error caller "expected a string?" v)))])) 
+       [(union (list _ ... (cons g (and (app type-of (== @string?)) u)) _ ...))
+        (assert g (thunk (raise-argument-error caller "expected a string?" v)))
+        u]
+       [_ (assert #f (thunk (raise-argument-error caller "expected a string?" v)))])) 
    (define (type-compress self force? ps) string/compress)])     
 
 ; The value of the force? parameter is ignored since 
@@ -133,7 +135,7 @@
 (define (guarded-string->integer s)
   (let ((i (string->integer s)))
     (type-cast @integer? i 'string->integer)
-    i))
+    i)) ; TODO semantics here are weird
 
 (define-operator @string->integer
   #:identifier 'string->integer
