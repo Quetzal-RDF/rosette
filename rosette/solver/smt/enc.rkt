@@ -65,6 +65,9 @@
      ($bv->int (enc v env) (bitvector-size (get-type v)))]  
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
+    [(expression (== @string->integer) s)
+     (define i ($str.to.int s))
+     ($ite ($= i 0) $false i)]  
     [(expression (== @substring) s i j)
      ($str.substr (enc s env) (enc i env) ($- (enc j env) (enc i env)))]
     [(expression (== @string-replace-internal) s from to all?)
@@ -118,7 +121,7 @@
   [@bvurem $bvurem] [@bvsrem $bvsrem] [@bvsmod $bvsmod] [@concat $concat]
   ; string
   [@string-append $str.++] [@string-length $str.len]
-  [@integer->string $int.to.str] [@string->integer $str.to.int]
+  [@integer->string $int.to.str]
   [@string-contains? $str.contains] [@string-prefix? $str.prefixof]
   [@string-suffix? $str.suffixof] [@string-at $str.at]
   [@string-index-of $str.indexof]

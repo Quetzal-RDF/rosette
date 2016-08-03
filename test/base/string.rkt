@@ -3,8 +3,9 @@
 (require rackunit rackunit/text-ui rosette/lib/roseunit
          rosette/solver/solution
          rosette/base/core/term rosette/base/core/string
-         rosette/base/core/bool rosette/base/core/real
+         rosette/base/core/bool
          rosette/base/core/merge
+         (only-in rosette/base/core/real @integer? @real? @= @<= @>= @< @> @+)
          (only-in rosette/base/form/define define-symbolic define-symbolic*)
          (only-in rosette/base/core/equality @equal?)
          "common.rkt" "solver.rkt")
@@ -32,14 +33,6 @@
     (define preconditions (asserts))
     (clear-asserts!)
     (check-pred unsat? (apply solve (! (@equal? (expression op e ...) expected)) preconditions))))
-
-; TODO duplicate logic from real.rkt tests, refactor
-(define-syntax check-exn
-  (syntax-rules ()
-    [(_ expr)
-     (check-exn exn:fail? (thunk (with-asserts-only expr)))]
-    [(_ pred expr)
-     (check-exn pred (thunk (with-asserts-only expr)))]))
 
 ; TODO duplicate logic from real.rkt tests, refactor
 (define-syntax-rule (check-state actual expected-value expected-asserts)
@@ -76,9 +69,9 @@
   (check-valid? (@string-append x y "") (@string-append x y)))
 
 (define (check-string-append-types)
-  (check-exn #px"expected string?" (@string-append 'a))
-  (check-exn #px"expected string?" (@string-append "foo" xi))
-  (check-exn #px"expected string?" (@string-append (merge a 2 #f))))
+  (check-exn #px"expected a string?" (thunk (@string-append 'a)))
+  (check-exn #px"expected a string?" (thunk (@string-append "foo" xi)))
+  (check-exn #px"expected a string?" (thunk (@string-append (merge a 2 #f)))))
 
 (define (check-string-append-lit)
   (check-state (@string-append "foo") "foo" (list))
@@ -98,9 +91,9 @@
   (check-state (@string-length "") 0 (list)))
 
 (define (check-string-length-types)
-  (check-exn #px"expected string?" (@string-length 'a))
-  (check-exn #px"expected string?" (@string-length xi))
-  (check-exn #px"expected string?" (@string-length (merge a 2 #f))))
+  (check-exn #px"expected string?" (thunk (@string-length 'a)))
+  (check-exn #px"expected string?" (thunk (@string-length xi)))
+  (check-exn #px"expected string?" (thunk (@string-length (merge a 2 #f)))))
 
 (define (check-string-length-lit)
   (check-state (@string-length "a") 1 (list))
@@ -116,7 +109,7 @@
 (define (check-string->integer-non-number)
   (check-state (@string->integer "foo") #f (list))
   (check-state (@string->integer "foo1") #f (list))
-  (check-pred unsat? (solve (@= x (@string->append "a" y)) (@= xi (@string->integer x))))
+  (check-pred unsat? (solve (@= x (@string->integer "a" y)) (@= xi (@string->integer x))))
   (clear-asserts!))
 
 (define (check-string->integer-non-integer)
@@ -124,9 +117,9 @@
 
 ; TODO refactor these check-exns
 (define (check-string->integer-types)
-  (check-exn #px"expected string?" (@string->integer 'a))
-  (check-exn #px"expected string?" (@string->integer xi))
-  (check-exn #px"expected string?" (@string->integer (merge a 2 #f))))
+  (check-exn #px"expected string?" (thunk (@string->integer 'a)))
+  (check-exn #px"expected string?" (thunk (@string->integer xi)))
+  (check-exn #px"expected string?" (thunk (@string->integer (merge a 2 #f)))))
 
 (define (check-string->integer-lit)
   (check-state (@string->integer "1") 1 (list))
@@ -138,12 +131,12 @@
   (check-valid? (@string->integer (@integer->string xi)) xi))
 
 (define (check-integer->string-types)
-  (check-exn #px"expected integer?" (@integer->string 'a))
-  (check-exn #px"expected integer?" (@integer->string 1.2))
-  (check-exn #px"expected integer?" (@integer->string x))
-  (check-exn #px"expected integer?" (@integer->string xr))
-  (check-exn #px"expected integer?" (@integer->string (merge a "" #f)))
-  (check-exn #px"expected integer?" (@integer->string (merge a xr #f))))
+  (check-exn #px"expected integer?" (thunk (@integer->string 'a)))
+  (check-exn #px"expected integer?" (thunk (@integer->string 1.2)))
+  (check-exn #px"expected integer?" (thunk (@integer->string x)))
+  (check-exn #px"expected integer?" (thunk (@integer->string xr)))
+  (check-exn #px"expected integer?" (thunk (@integer->string (merge a "" #f))))
+  (check-exn #px"expected integer?" (thunk (@integer->string (merge a xr #f)))))
 
 (define (check-integer->string-lit)
   (check-state (@integer->string 0) "0" (list))
@@ -171,11 +164,11 @@
   (check-valid? (@substring x xi) (@substring x xi (@string-length x))))
 
 (define (check-substring-types)
-  (check-exn #px"expected string?" (@substring 'a))
-  (check-exn #px"expected string?" (@substring xi))
-  (check-exn #px"expected string?" (@substring (merge a 2 #f)))
-  (check-exn #px"expected integer?" (@substring x y))
-  (check-exn #px"expected integer?" (@substring x xi y)))
+  (check-exn #px"expected string?" (thunk (@substring 'a)))
+  (check-exn #px"expected string?" (thunk (@substring xi)))
+  (check-exn #px"expected string?" (thunk (@substring (merge a 2 #f))))
+  (check-exn #px"expected integer?" (thunk (@substring x y)))
+  (check-exn #px"expected integer?" (thunk (@substring x xi y))))
 
 (define (check-substring-lit)
   (check-state (@substring "foo" 0) "foo" (list))
@@ -201,10 +194,10 @@
   (clear-asserts!))
 
 (define (check-string-contains?-types)
-  (check-exn #px"expected string?" (@string-contains? 'a ""))
-  (check-exn #px"expected string?" (@string-contains? "" xi))
-  (check-exn #px"expected string?" (@string-contains? (merge a 2 #f) x))
-  (check-exn #px"expected string?" (@string-contains? x (merge a xi #f))))
+  (check-exn #px"expected string?" (thunk (@string-contains? 'a "")))
+  (check-exn #px"expected string?" (thunk (@string-contains? "" xi)))
+  (check-exn #px"expected string?" (thunk (@string-contains? (merge a 2 #f) x)))
+  (check-exn #px"expected string?" (thunk (@string-contains? x (merge a xi #f)))))
 
 (define (check-string-contains?-lit)
   (check-state (@string-contains? "foo" "f") #t (list))
@@ -219,18 +212,18 @@
   (check-state (@string-contains? "foo" x) (@string-contains? "foo" x) (list))
   (check-state (@string-contains? x y) (@string-contains? x y) (list))
   (check-state (@string-contains? (merge a x #f) (merge b y #f)) (@string-contains? x y) (list a b))
-  (check-valid (@string-contains? x (@substring x xi yi)) #t))
+  (check-valid? (@string-contains? x (@substring x xi yi)) #t))
 
 (define (check-string-prefix?-empty)
-  (check-valid (@string-prefix? x "") #t)
+  (check-valid? (@string-prefix? x "") #t)
   (check-pred unsat? (solve (@string-prefix? "" x) (! (@= x ""))))
   (clear-asserts!))
 
 (define (check-string-prefix?-types)
-  (check-exn #px"expected string?" (@string-prefix? 'a ""))
-  (check-exn #px"expected string?" (@string-prefix? "" xi))
-  (check-exn #px"expected string?" (@string-prefix? (merge a 2 #f) x))
-  (check-exn #px"expected string?" (@string-prefix? x (merge a xi #f))))
+  (check-exn #px"expected string?" (thunk (@string-prefix? 'a "")))
+  (check-exn #px"expected string?" (thunk (@string-prefix? "" xi)))
+  (check-exn #px"expected string?" (thunk (@string-prefix? (merge a 2 #f) x)))
+  (check-exn #px"expected string?" (thunk (@string-prefix? x (merge a xi #f)))))
 
 (define (check-string-prefix?-lit)
   (check-state (@string-prefix? "foo" "f") #t (list))
@@ -251,15 +244,15 @@
   (check-valid? (@string-prefix? x x) #t))
 
 (define (check-string-suffix?-empty)
-  (check-valid (@string-suffix? x "") #t)
+  (check-valid? (@string-suffix? x "") #t)
   (check-pred unsat? (solve (@string-suffix? "" x) (! (@= x ""))))
   (clear-asserts!))
 
 (define (check-string-suffix?-types)
-  (check-exn #px"expected string?" (@string-suffix? 'a ""))
-  (check-exn #px"expected string?" (@string-suffix? "" xi))
-  (check-exn #px"expected string?" (@string-suffix? (merge a 2 #f) x))
-  (check-exn #px"expected string?" (@string-suffix? x (merge a xi #f))))
+  (check-exn #px"expected string?" (thunk (@string-suffix? 'a "")))
+  (check-exn #px"expected string?" (thunk (@string-suffix? "" xi)))
+  (check-exn #px"expected string?" (thunk (@string-suffix? (merge a 2 #f) x)))
+  (check-exn #px"expected string?" (thunk (@string-suffix? x (merge a xi #f)))))
 
 (define (check-string-suffix?-lit)
   (check-state (@string-suffix? "foo" "f") #f (list))
@@ -291,12 +284,12 @@
   (clear-asserts!))
 
 (define (check-string-replace-types)
-  (check-exn #px"expected string?" (@string-replace 'a "" "" #:all? #f))
-  (check-exn #px"expected string?" (@string-replace "" xi "" #:all? #f))
-  (check-exn #px"expected string?" (@string-replace x y 2 #:all? #f))
-  (check-exn #px"expected string?" (@string-replace (merge a 2 #f) x y #:all? #f))
-  (check-exn #px"expected string?" (@string-replace x (merge a xi #f) y #:all? #f))
-  (check-exn #px"expected string?" (@string-replace x y (merge 'a xi #f) #:all? #f)))
+  (check-exn #px"expected string?" (thunk (@string-replace 'a "" "" #:all? #f)))
+  (check-exn #px"expected string?" (thunk (@string-replace "" xi "" #:all? #f)))
+  (check-exn #px"expected string?" (thunk (@string-replace x y 2 #:all? #f)))
+  (check-exn #px"expected string?" (thunk (@string-replace (merge a 2 #f) x y #:all? #f)))
+  (check-exn #px"expected string?" (thunk (@string-replace x (merge a xi #f) y #:all? #f)))
+  (check-exn #px"expected string?" (thunk (@string-replace x y (merge 'a xi #f) #:all? #f))))
 
 (define (check-string-replace-lit)
   (check-state (@string-replace "foo" "f" "b" #:all? #f) "boo" (list))
@@ -322,16 +315,16 @@
   (clear-asserts!))
 
 (define (check-string-at-out-of-bounds)
-  (check-pred unsat? (solve (@sring-at x xi) (@>= xi (@string-length x))))
+  (check-pred unsat? (solve (@string-at x xi) (@>= xi (@string-length x))))
   (clear-asserts!))
 
 (define (check-string-at-types)
-  (check-exn #px"expected string?" (@string-at 'a 0))
-  (check-exn #px"expected integer?" (@string-at "foo" 1.2))
-  (check-exn #px"expected string?" (@string-at 0 xi))
-  (check-exn #px"expected integer?" (@string-at x xr))
-  (check-exn #px"expected string?" (@string-at (merge a xi #f) xi))
-  (check-exn #px"expected integer?" (@string-at (merge a x #f) (merge b xr #f))))
+  (check-exn #px"expected string?" (thunk (@string-at 'a 0)))
+  (check-exn #px"expected integer?" (thunk (@string-at "foo" 1.2)))
+  (check-exn #px"expected string?" (thunk (@string-at 0 xi)))
+  (check-exn #px"expected integer?" (thunk (@string-at x xr)))
+  (check-exn #px"expected string?" (thunk (@string-at (merge a xi #f) xi)))
+  (check-exn #px"expected integer?" (thunk (@string-at (merge a x #f) (merge b xr #f)))))
 
 (define (check-string-at-lit)
   (check-state (@string-at "bar" 0) "b" (list))
@@ -364,15 +357,15 @@
   (clear-asserts!))
 
 (define (check-string-index-of-types)
-  (check-exn #px"expected string?" (@string-index-of 'a "foo"))
-  (check-exn #px"expected string?" (@string-index-of "foo" 2))
-  (check-exn #px"expected integer?" (@string-index-of "foo" "" 1.2))
-  (check-exn #px"expected string?" (@string-index-of "foo" xi))
-  (check-exn #px"expected string?" (@string-index-of a x))
-  (check-exn #px"expected integer?" (@string-index-of x y xr))
-  (check-exn #px"expected string?" (@string-index-of (merge a xi #f) x yi))
-  (check-exn #px"expected string?" (@string-index-of (merge a x #f) (merge b xi #f) yi))
-  (check-exn #px"expected integer?" (@string-idex-of (merge a x #f) (merge b y #f) (merge c xr #f))))
+  (check-exn #px"expected string?" (thunk (@string-index-of 'a "foo")))
+  (check-exn #px"expected string?" (thunk (@string-index-of "foo" 2)))
+  (check-exn #px"expected integer?" (thunk (@string-index-of "foo" "" 1.2)))
+  (check-exn #px"expected string?" (thunk (@string-index-of "foo" xi)))
+  (check-exn #px"expected string?" (thunk (@string-index-of a x)))
+  (check-exn #px"expected integer?" (thunk (@string-index-of x y xr)))
+  (check-exn #px"expected string?" (thunk (@string-index-of (merge a xi #f) x yi)))
+  (check-exn #px"expected string?" (thunk (@string-index-of (merge a x #f) (merge b xi #f) yi)))
+  (check-exn #px"expected integer?" (thunk (@string-index-of (merge a x #f) (merge b y #f) (merge c xr #f)))))
 
 (define (check-string-index-of-no-offset)
   (check-state (@string-index-of "foo" "f") 0 (list))
@@ -481,7 +474,6 @@
    "Tests for string-replace in rosette/base/string.rkt"
    (check-string-replace-empty)
    (check-string-replace-all)
-   (check-string-replace-first)
    (check-string-replace-types)
    (check-string-replace-lit)
    (check-string-replace-symbolic)))

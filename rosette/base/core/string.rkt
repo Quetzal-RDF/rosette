@@ -132,16 +132,11 @@
        (if (integer? n) n #f))] 
     [x (expression @string->integer x)]))
 
-(define (guarded-string->integer s)
-  (let ((i (string->integer s)))
-    (type-cast @integer? i 'string->integer)
-    i)) ; TODO semantics here are weird
-
 (define-operator @string->integer
   #:identifier 'string->integer
   #:range T*->integer?
   #:unsafe string->integer
-  #:safe (lift-op guarded-string->integer))
+  #:safe (lift-op string->integer))
 
 (define ($substring s i [j (@string-length s)])
   (if (and (string? s) (number? i) (number? j)) 
