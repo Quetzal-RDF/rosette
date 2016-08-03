@@ -76,13 +76,16 @@
 
 ;; ----------------- String Operators ----------------- ;;
 
+; TODO: Simplifications
+
 (define (string-append-simplify xs)
   (match xs
     [(list) xs]
     [(list _) xs]
     [(list-rest (? string? x) ..2 rest)
      (list* (apply string-append x) (string-append-simplify rest))]
-    [(list x rest ...) (list* x (string-append-simplify rest))]))
+    [(list x rest ...)
+     (list* x (string-append-simplify rest))]))
 
 (define ($string-append . xs)
   (match xs
@@ -188,10 +191,10 @@
 (define (@string-replace s from to #:all? [all? #t])
   (@string-replace-internal s from to all?))
 
-(define ($string-prefix? x y)
-  (match* (x y)
-    [((? string?) (? string?)) (string-prefix? x y)]
-    [(_ _) (expression @string-prefix? x y)]))
+(define ($string-prefix? s pre)
+  (match* (s pre)
+    [((? string?) (? string?)) (string-prefix? s pre)]
+    [(_ _) (expression @string-prefix? s pre)]))
  
 (define-operator @string-prefix?
   #:identifier 'string-prefix?
@@ -199,10 +202,10 @@
   #:unsafe $string-prefix?
   #:safe (lift-op $string-prefix?))
 
-(define ($string-suffix? s p)
-  (if (and (string? s) (string? p))
-      (string-suffix? s p)
-      (expression @string-suffix? s p)))
+(define ($string-suffix? s suf)
+  (if (and (string? s) (string? suf))
+      (string-suffix? s suf)
+      (expression @string-suffix? s suf)))
               
 (define-operator @string-suffix?
   #:identifier 'string-suffix?

@@ -66,12 +66,15 @@
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @string->integer) s)
-     (define i ($str.to.int s))
-     ($ite ($= i 0) $false i)]  
+     ($str->int (env s env))] 
     [(expression (== @substring) s i j)
-     ($str.substr (enc s env) (enc i env) ($- (enc j env) (enc i env)))]
+     ($substr (enc s env) (enc i env) (enc j env))]
     [(expression (== @string-replace-internal) s from to all?)
      ($str.replace (enc s env) (enc from env) (enc to env))]
+    [(expression (== @string-prefix?) s pre)
+     ($str.prefixof (enc pre env) (enc s env))]
+    [(expression (== @string-suffix?) s suf)
+     ($str.suffixof (enc suf env) (enc s env))]
     [(expression (== @regexp-match-exact?) r s)
      ($str.in.re (enc s env) (enc r env))]
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
@@ -122,8 +125,7 @@
   ; string
   [@string-append $str.++] [@string-length $str.len]
   [@integer->string $int.to.str]
-  [@string-contains? $str.contains] [@string-prefix? $str.prefixof]
-  [@string-suffix? $str.suffixof] [@string-at $str.at]
+  [@string-contains? $str.contains] [@string-at $str.at]
   [@string-index-of $str.indexof]
   ; regex
   [@string->regexp $str.to.re] [@regexp-range $re.range]
@@ -174,3 +176,10 @@
   (define bv0 ($bv 0 n))
   (define b (expt 2 i))
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
+
+(define ($str->int s)
+  (define i ($str.to.int s))
+  ($ite ($= i 0) $false i))
+
+(define ($substr s i j) 
+  ($str.substr s i ($- j i)))
