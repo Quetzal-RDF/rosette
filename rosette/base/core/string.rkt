@@ -147,7 +147,8 @@
       (expression @substring s i j)))
 
 (define (guarded-substring s i [j (@string-length s)])
-  (assert (&& (@>= i 0) (@<= i j) (@<= j (@string-length s))))
+  (assert (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))
+          (thunk (error 'substring "index out of bounds")))
   ($substring s i j))
   
 (define-operator @substring 
@@ -180,13 +181,12 @@
   #:safe
   (lambda (s from to [all? #t])
     (define caller 'string-replace)
-    (if all?
-        (error caller "replace all not supported, use all? #f instead")
-        ($string-replace
-          (type-cast @string? s caller)
-          (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
-          (type-cast @string? to caller)
-          all?))))
+    (assert (@! all?) (thunk (error caller "replace all not supported, use all? #f instead")))
+    ($string-replace
+     (type-cast @string? s caller)
+     (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
+     (type-cast @string? to caller)
+     all?)))
 
 (define (@string-replace s from to #:all? [all? #t])
   (@string-replace-internal s from to all?))
@@ -218,16 +218,21 @@
       (@substring s offset (+ offset 1))
       (expression @string-at s offset)))
 
+(define (guarded-string-at s offset)
+  (assert (&& (@<= 0 offset) (@< offset (@string-length s)) (@<= 1 (@string-length s)))
+          (thunk (error 'string-at "index out of bounds")))
+  (string-at s offset))
+
 (define-operator @string-at
   #:identifier 'string-at
   #:range T*->string?
   #:unsafe string-at
-  #:safe (lift-op string-at @string? @integer?))
+  #:safe (lift-op guarded-string-at @string? @integer?))
 
 (define (index-of s sub offset)
   (if (@string-contains? s sub)
      (let ([len-sub (@string-length sub)] [len (@string-length s)])
-       (for/or ([i (+ (- len len-sub) 1)])
+       (for/or ([i (in-range offset (+ (- len len-sub) 1))])
          (if (@string-contains? (@substring s i (+ i len-sub)) sub)
              i
              #f)))
@@ -238,11 +243,15 @@
       (index-of s sub offset)
       (expression @string-index-of s sub offset)))
 
+(define (guarded-string-index-of s sub [offset 0])
+  (assert (&& (@<= 0 offset) (@< offset (@string-length s))) (thunk (error 'string-index-of "offset out of bounds")))
+  (string-index-of s sub offset))
+
 (define-operator @string-index-of
   #:identifier 'string-index-of
   #:range T*->integer?
   #:unsafe string-index-of
-  #:safe (lift-op string-index-of @string? @string? @integer?))
+  #:safe (lift-op guarded-string-index-of @string? @string? @integer?))
 
 ; We are going to disable all mutation operations on strings.
 

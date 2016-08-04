@@ -146,6 +146,7 @@
   (check-state (@integer->string xr) (@integer->string (@real->integer xr)) (list (@int? xr)))
   (check-state (@integer->string (merge a xi #f)) (@integer->string xi) (list a))
   (check-state (@integer->string (merge a xr #f)) (@integer->string (@real->integer xr)) (list (&& a (@int? xr)))))
+; TODO: Once we have simplifications, string->integer (integer->string) or the reverse
 
 (define (check-substring-empty)
   (check-state (@substring "" 0) "" (list))
@@ -298,18 +299,26 @@
   (check-pred unsat? (solve (@string-suffix? x y) (@= (@string-length x) (@string-length y)) (! (@equal? x y))))
   (clear-asserts!)
   ;(check-valid? (@string-suffix? x x) #t) TODO need simplify first
-  (check-pred unsat? (solve (!(@string-prefix? x x))))
+  (check-pred unsat? (solve (! (@string-prefix? x x))))
   (clear-asserts!))
 
-(define (check-string-replace-empty)
-  (check-valid? (@string-replace "" x y #:all? #f) "")
-  (check-valid? (@string-replace x "" y #:all? #f) (@string-append y x)))
+; https://github.com/Z3Prover/z3/issues/703
+;(define (check-string-replace-empty) (TODO Z3 is broken and simplifications aren't implemented, so this fails regardless right now)
+  ;(check-valid? (@string-replace "" x y #:all? #f) "") need simplifications for this
+  ;(check-pred unsat? (solve (! (@equal? "" (@string-replace "" x y #:all? #f))))) ; This fails because Z3 is broken
+  ;(clear-asserts!)
+  ; (check-valid? (@string-replace x "" y #:all? #f) (@string-append y x)) need simplifications for this
+  ;(check-pred unsat? (solve (! (@equal? (@string-append y x) (@string-replace x "" y #:all? #f))))) ; This fails because Z3 is broken
+  ;(clear-asserts!))
 
 ; Replace-all is not yet supported
-(define (check-string-replace-all) 
-  (check-pred unsat? (solve (@string-replace x y z)))
-  (check-pred unsat? (solve (@string-replace x y z #:all? #t)))
-  (check-pred unsat? (solve (@string-replace x y z #:all? a) a))
+(define (check-string-replace-all)
+  (check-exn #px"replace all not supported" (thunk (with-asserts-only (@string-replace x y z))))
+  (check-exn #px"replace all not supported" (thunk (with-asserts-only (@string-replace x y z #:all? #t))))
+  (@string-replace x y z #:all? a)
+  (define preconditions (asserts))
+  (clear-asserts!)
+  (check-pred unsat? (solve (@equal? x (@string-replace x y z #:all? a)) a (first preconditions)))
   (clear-asserts!))
 
 (define (check-string-replace-types)
@@ -318,42 +327,56 @@
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-replace x y 2 #:all? #f))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-replace (merge a 2 #f) x y #:all? #f))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-replace x (merge a xi #f) y #:all? #f))))
-  (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-replace x y (merge 'a xi #f) #:all? #f)))))
+  (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-replace x y (merge a 'a #f) #:all? #f)))))
 
 (define (check-string-replace-lit)
   (check-state (@string-replace "foo" "f" "b" #:all? #f) "boo" (list))
   (check-state (@string-replace "foo" "fo" "y" #:all? #f) "yo" (list)))
 
 (define (check-string-replace-symbolic)
+  (check-state (@string-replace x y z #:all? a) (@string-replace x y z #:all? a) (list (@! a)))
+  (clear-asserts!)
   (check-state (@string-replace "foo" "" x #:all? #f) (@string-replace "foo" "" x #:all? #f) (list))
   (check-state (@string-replace "foo" x y #:all? #f) (@string-replace "foo" x y #:all? #f) (list))
   (check-state (@string-replace "foo" x "" #:all? #f) (@string-replace "foo" x "" #:all? #f) (list))
   (check-state (@string-replace x "" y #:all? #f) (@string-replace x "" y #:all? #f) (list))
   (check-state (@string-replace x y "" #:all? #f) (@string-replace x y "" #:all? #f) (list))
   (check-state (@string-replace x y z #:all? #f) (@string-replace x y z #:all? #f) (list))
-  (check-state (@string-replace (merge a x #f) (merge b y #f) (merge c z #f)) (@string-replace x y z) (list a b c))
-  (check-valid? (@string-replace x x y #:all? #f) y))
+  (check-state (@string-replace (merge a x #f) (merge b y #f) (merge c z #f) #:all? #f) (@string-replace x y z #:all? #f) (list a b c))
+  (clear-asserts!)
+  ; (check-valid? (@string-replace x x y #:all? #f) y) TODO need simplification for this
+  (check-pred unsat? (solve (! (@equal? y (@string-replace x x y #:all? #f))))) 
+  (clear-asserts!))
 
 ; The behavior for this is more like Racket substring than Z3 string-at - we don't allow invalid indexes
 (define (check-string-at-empty)
-  (check-pred unsat? (solve (@string-at "" xi)))
-  (clear-asserts!))
+  (check-exn #px"index out of bounds" (thunk (with-asserts-only (@equal? x (@string-at "" xi)))))
+  (clear-asserts!)
+  (define y (@string-at x xi))
+  (define preconditions (asserts))
+  (clear-asserts!)
+  (check-pred unsat? (solve (@equal? "" x) (first preconditions))))
 
 (define (check-string-at-negative-offset)
-  (check-pred unsat? (solve (@string-at x xi) (@<= xi -1)))
+  (@string-at x xi)
+  (define preconditions (asserts))
+  (clear-asserts!)
+  (check-pred unsat? (solve (@<= xi -1) (first preconditions)))
   (clear-asserts!))
 
 (define (check-string-at-out-of-bounds)
-  (check-pred unsat? (solve (@string-at x xi) (@>= xi (@string-length x))))
+  (define y (@string-at x xi))
+  (define preconditions (asserts))
+  (clear-asserts!)
+  (check-pred unsat? (solve (@>= xi (@string-length x)) (first preconditions)))
   (clear-asserts!))
 
 (define (check-string-at-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-at 'a 0))))
   (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-at "foo" 1.2))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-at 0 xi))))
-  (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-at x xr))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-at (merge a xi #f) xi))))
-  (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-at (merge a x #f) (merge b xr #f))))))
+  (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-at (merge a x #f) (merge b 1.2 #f))))))
 
 (define (check-string-at-lit)
   (check-state (@string-at "bar" 0) "b" (list))
@@ -361,19 +384,35 @@
   (check-state (@string-at "bar" 2) "r" (list)))
 
 (define (check-string-at-symbolic)
-  (check-state (@string-at x 0) (@string-at x 0) (list))
-  (check-state (@string-at "" xi) (@string-at "" xi) (list))
-  (check-state (@string-at x xi) (@string-at x xi) (list))
-  (check-state (@string-at (merge a x #f) (merge b xi #f)) (@string-at x xi) (list a b))
-  (check-valid? (@string-at x xi) (@substring x xi (@+ xi 1)))) 
+  (check-state (@string-at x 0) (@string-at x 0) (list (&& (@<= 1 (@string-length x)) (@< 0 (@string-length x)))))
+  (clear-asserts!)
+  (check-state (@string-at "foo" xi) (@string-at "foo" xi) (list (&& (@<= 0 xi) (@< xi 3))))
+  (clear-asserts!)
+  (check-state (@string-at x xi) (@string-at x xi) (list (&& (@<= 0 xi) (@< xi (@string-length x)) (@<= 1 (@string-length x)))))
+  (clear-asserts!)
+  (check-state (@string-at x xr) (@string-at x (@real->integer xr)) (list (&& (@<= 1 (@string-length x)) (@<= 0 (@real->integer xr)) (@< (@real->integer xr) (@string-length x))) (@int? xr)))
+  (clear-asserts!)
+  (check-state (@string-at (merge a x #f) (merge b xi #f)) (@string-at x xi) (list a b (&& (@<= 0 xi) (@< xi (@string-length x)) (@<= 1 (@string-length x)))))
+  (clear-asserts!)
+  ;(check-valid? (@string-at x xi) (@substring x xi (@+ xi 1))) TODO need simplifications for this
+  (define xc (@string-at x xi))
+  (define preconditions (asserts))
+  (clear-asserts!)
+  (check-pred unsat? (solve (! (@equal? xc (@substring x xi (@+ xi 1)))) (first preconditions)))
+  (clear-asserts!)) 
 
 (define (check-string-index-of-empty)
-  (check-valid? (@string-index-of x "" xi) 0)
-  (check-pred unsat? (solve (@>= (@string-index-of "" x xi) 0) (! (@= x ""))))
+  ;(check-valid? (@string-index-of x "" xi) 0) TODO need simplifications for this
+  (define i (@string-index-of x "" xi))
+  (check-pred unsat? (solve (! (@= i 0)) (first (asserts))))
+  (clear-asserts!)
+  (define j (@string-index-of "" x xi))
+  (check-pred unsat? (solve (@>= j 0) (! (@equal? x "")) (first (asserts))))
   (clear-asserts!))
 
 (define (check-string-index-of-not-contains)
-  (check-pred unsat? (solve (@>= (@string-index-of x y xi) 0) (! (@string-contains? x y))))
+  (define i (@string-index-of x y xi))
+  (check-pred unsat? (solve (@>= i 0) (! (@string-contains? x y)) (first (asserts))))
   (clear-asserts!))
 
 (define (check-string-index-of-negative-offset)
@@ -381,7 +420,8 @@
   (clear-asserts!))
 
 (define (check-string-index-of-out-of-bounds)
-  (check-pred unsat? (solve (@>= (@string-index-of x y xi) 0) (@>= xi (@string-length x))))
+  (define i (@string-index-of x y xi))
+  (check-pred unsat? (solve (@>= i 0) (@>= xi (@string-length x)) (first (asserts))))
   (clear-asserts!))
 
 (define (check-string-index-of-types)
@@ -390,10 +430,9 @@
   (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-index-of "foo" "" 1.2))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-index-of "foo" xi))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-index-of a x))))
-  (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-index-of x y xr))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-index-of (merge a xi #f) x yi))))
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-index-of (merge a x #f) (merge b xi #f) yi))))
-  (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-index-of (merge a x #f) (merge b y #f) (merge c xr #f))))))
+  (check-exn #px"expected integer?" (thunk (with-asserts-only (@string-index-of (merge a x #f) (merge b y #f) (merge c 1.2 #f))))))
 
 (define (check-string-index-of-no-offset)
   (check-state (@string-index-of "foo" "f") 0 (list))
@@ -401,11 +440,11 @@
   (check-state (@string-index-of "foo" "fo") 0 (list))
   (check-state (@string-index-of "foo" "oo") 1 (list))
   (check-state (@string-index-of "foo" "foo") 0 (list))
-  (check-state (@string-index-of "foo" "of") -1 (list)))
+  (check-state (@string-index-of "foo" "of") #f (list)))
 
 (define (check-string-index-of-offset)
   (check-state (@string-index-of "foo" "o" 2) 2 (list))
-  (check-state (@string-index-of "foo" "foo" 1) -1 (list)))
+  (check-state (@string-index-of "foo" "foo" 1) #f (list)))
 
 (define (check-string-index-of-symbolic)
   (check-state (@string-index-of x "foo" 0) (@string-index-of x "foo" 0) (list))
@@ -416,6 +455,7 @@
   (check-state (@string-index-of "foo" x xi) (@string-index-of "foo" x xi) (list))
   (check-state (@string-index-of x y xi) (@string-index-of x y xi) (list))
   (check-state (@string-index-of x y) (@string-index-of x y) (list))
+  ;(check-exn #px"expected integer?" (thunk (with-asserts-only (@string-index-of x y xr))))
   (check-state (@string-index-of (merge a x #f) (merge b y #f)) (@string-index-of x y) (list a b))
   (check-state (@string-index-of (merge a x #f) (merge b y #f) (merge c xi #f)) (@string-index-of x y xi) (list a b c)) 
   (check-valid? (@string-index-of x x) 0))
@@ -500,7 +540,7 @@
 (define tests:string-replace
   (test-suite+
    "Tests for string-replace in rosette/base/string.rkt"
-   (check-string-replace-empty)
+   ;(check-string-replace-empty)
    (check-string-replace-all)
    (check-string-replace-types)
    (check-string-replace-lit)
@@ -539,8 +579,8 @@
 (time (run-tests tests:string-contains?))
 (time (run-tests tests:string-prefix?))
 (time (run-tests tests:string-suffix?))
-;(time (run-tests tests:string-replace))
-;(time (run-tests tests:string-at))
+(time (run-tests tests:string-replace))
+(time (run-tests tests:string-at))
 ;(time (run-tests tests:string-index-of))
 
 (solver-shutdown (solver))
