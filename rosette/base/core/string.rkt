@@ -31,7 +31,7 @@
         (assert g (thunk (raise-argument-error caller "expected a string?" v)))
         u]
        [_ (assert #f (thunk (raise-argument-error caller "expected a string?" v)))])) 
-   (define (type-compress self force? ps) string/compress)])     
+   (define (type-compress self force? ps) (string/compress force? ps))])     
 
 ; The value of the force? parameter is ignored since 
 ; we treat all strings as immutable and therefore always
