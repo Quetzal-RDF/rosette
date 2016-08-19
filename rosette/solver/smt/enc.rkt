@@ -95,7 +95,7 @@
     [(? integer?) (inexact->exact v)]
     [(? real?) (if (exact? v) ($/ (numerator v) (denominator v)) v)]
     [(bv lit t) ($bv lit (bitvector-size t))]
-    [(? string?) v]
+    [(? string?) (string->utf8 v)]
     [(? regexp?)
      (cond
        [(equal? v @regexp-all) $re.allchar]
@@ -177,6 +177,22 @@
   (define bv0 ($bv 0 n))
   (define b (expt 2 i))
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
+
+; Encode a string literal into the UTF-8 format that Z3 expects
+; Credit to georges-duperon from the Racket IRC for writing most of this
+(define (string->utf8 s)
+  (string-append
+   "\""
+   (bytes->string/utf-8
+    (apply bytes-append
+           (for/list ([b (string->bytes/utf-8 s)])
+             (cond
+               [(and (>= b 32) (<= b 126)) (bytes b)]
+               [(< b #x10)
+                (string->bytes/utf-8 (format "\\x0~x" b))]
+               [(or (and (>= b #x10) (< b 32)) (> b 126))
+                (string->bytes/utf-8 (format "\\x~x" b))]))))
+   "\""))
 
 ; TODO, can't do this because of type system, need to find a better way to reconcile semantics
 (define ($str->int s) 

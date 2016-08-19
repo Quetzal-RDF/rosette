@@ -67,7 +67,7 @@
   (printf-smt "(declare-fun ~a ~a ~a)" id domain range))
                      
 (define (define-const id type body)
-  (printf-smt "(define-fun ~a () ~a ~s)" id type body))
+  (printf-smt "(define-fun ~a () ~a ~a)" id type body))
 
 ; Applications of uninterpreted functions.
 (define (app f . args)
