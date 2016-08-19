@@ -9,9 +9,10 @@
          parser-tools/lex-sre
          parser-tools/cfg-parser
          (prefix-in $ "smtlib2.rkt")
-         (only-in "../../base/core/safe.rkt" assert))
+         (only-in "../../base/core/safe.rkt" assert)
+         (only-in "parse-string.rkt" string->$str escape-string))
 
-(provide parse-re)
+(provide parse-re string->$str)
 
 (define-tokens res (LIT))
 
@@ -83,29 +84,29 @@
      ((ANY) (unsupported-regexp-error ".")) ; TODO any single character; somehow need both allchar and length is one, but can't nest that in an re
      ((^) (unsupported-regexp-error "^")) ; TODO start
      (($) (unsupported-regexp-error "$")) ; TODO finish
-     ((lit) ($str.to.re $1))
+     ((lit) ($str.to.re (string->$str $1)))
      ((LMODE mode : re RP) (unsupported-regexp-error "(?<mode>:<re>)")) ; TODO Match ‹regexp› using ‹mode›
      ((FIRST re RP) $2) ; TODO since we don't support match, we don't care if it's first, but may eventually
      ((look) $1)
      ((LMODE tst pces UNION pces RP) (unsupported-regexp-error "(?<test><pces>|<pces>)")) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
      ((LMODE tst pces RP) (unsupported-regexp-error "(?<test><pces>)"))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
     (rng
-     ((RB) ($str.to.re "]"))
-     ((-) ($str.to.re "-"))
+     ((RB) ($str.to.re (escape-string "]")))
+     ((-) ($str.to.re (escape-string "-")))
      ((mrng) $1)
-     ((mrng -) ($re.union $1 ($str.to.re "-"))))
+     ((mrng -) ($re.union $1 ($str.to.re (escape-string "-")))))
     (mrng
-     ((RB lrng) ($re.union $2 ($str.to.re "]")))
-     ((- lrng) ($re.union $2 ($str.to.re "-")))
+     ((RB lrng) ($re.union $2 ($str.to.re (escape-string "]"))))
+     ((- lrng) ($re.union $2 ($str.to.re (escape-string "-"))))
      ((lirng) $1))
     (lirng
-     ((rilit) ($str.to.re $1))
-     ((rilit - rilit) ($re.range $1 $3))
+     ((rilit) ($str.to.re (string->$str $1)))
+     ((rilit - rilit) ($re.range (string->$str $1) (string->$str $3)))
      ((lirng lrng) ($re.union $1 $2)))
     (lrng
-     ((^) ($str.to.re "^"))
-     ((rlit - rlit) ($re.range $1 $3))
-     ((^ lrng) ($re.union ($str.to.re "^") $2))
+     ((^) ($str.to.re (escape-string "^")))
+     ((rlit - rlit) ($re.range (string->$str $1) (string->$str $3)))
+     ((^ lrng) ($re.union ($str.to.re (escape-string "^")) $2))
      ((lirng) $1))
     (look
      ((LOOKE re RP) $2)
