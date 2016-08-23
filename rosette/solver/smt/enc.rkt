@@ -19,7 +19,7 @@
                   @concat @extract @zero-extend @sign-extend 
                   @integer->bitvector @bitvector->integer @bitvector->natural)
          (only-in "../../base/core/string.rkt"
-                  @string-append @string-length @substring
+                  @string/equal? @string-append @string-length @substring
                   @string-contains? @string-prefix? @string-suffix?
                   @string->integer @integer->string
                   @string-at @string-index-of @string-replace-internal)
@@ -126,6 +126,7 @@
   [@bvneg $bvneg] [@bvadd $bvadd] [@bvmul $bvmul] [@bvudiv $bvudiv] [@bvsdiv $bvsdiv]
   [@bvurem $bvurem] [@bvsrem $bvsrem] [@bvsmod $bvsmod] [@concat $concat]
   ; string
+  [@string/equal? $=]
   [@string-append $str.++] [@string-length $str.len]
   [@integer->string $int.to.str]
   [@string-contains? $str.contains] [@string-at $str.at]

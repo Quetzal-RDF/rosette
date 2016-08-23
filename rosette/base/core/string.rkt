@@ -4,25 +4,20 @@
          "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
          "safe.rkt" "../adt/seq.rkt")
 
-(provide @string? @string-append @string-length @substring
+(provide @string? @string/equal? @string-append @string-length @substring
          @string-contains? @string-prefix? @string-suffix?
          @string-replace @string-replace-internal
          @string->integer @integer->string
          @string-at @string-index-of @string-set! @string-fill!
          @string-copy! T*->string?)
 
-(define (string/equal? x y)
-  (match* (x y)
-    [((? string?) (? string?)) (equal? x y)]
-    [(_ _) (=? x y)]))
-
 (define-lifted-type @string?
   #:base string?
   #:is-a? (instance-of? string? @string?)
   #:methods
   [(define (solvable-default self) "")
-   (define (type-eq? self u v) (string/equal? u v)) 
-   (define (type-equal? self u v) (string/equal? u v))
+   (define (type-eq? self u v) (@string/equal? u v)) 
+   (define (type-equal? self u v) (@string/equal? u v))
    (define (type-cast self v [caller 'type-cast])
      (match v
        [(? string?) v]
@@ -76,7 +71,43 @@
 
 ;; ----------------- String Operators ----------------- ;;
 
+(define ($= x y)
+  (match* (x y)
+    [((? string?) (? string?)) (equal? x y)]
+    [(_ (== x)) #t]
+    [((expression (== ite) a (? string? b) (? string? c)) (? string? d))
+     (|| (&& a (equal? b d)) (&& (! a) (equal? c d)))]
+    [((? string? d) (expression (== ite) a (? string? b) (? string? c)))
+     (|| (&& a (equal? b d)) (&& (! a) (equal? c d)))]
+    [((expression (== ite) a (? string? b) (? string? c)) 
+      (expression (== ite) d (? string? e) (? string? f)))
+     (let ([b~e (equal? b e)] 
+           [b~f (equal? b f)] 
+           [c~e (equal? c e)] 
+           [c~f (equal? c f)])
+       (or (and b~e b~f c~e c~f)
+           (|| (&& a d b~e) (&& a (! d) b~f) (&& (! a) d c~e) (&& (! a) (! d) c~f))))]
+    [(a (expression (== @string-append) (? string? s) a))
+     (equal? "" s)]
+    [((expression (== @string-append) (? string? s) a) a) (equal? s "")]
+    [(_ _) (sort/expression @string/equal? x y)]))
+
+(define-operator @string/equal?
+  #:identifier '=
+  #:range T*->boolean?
+  #:unsafe $=
+  #:safe (lift-op $=))
+
 ; TODO: Simplifications
+
+(define (simplify-string-append x y)
+  (match* (x y)
+    [((? string?) (? string?)) (string-append x y)]
+    [(_ "") x]
+    [("" _) y]
+    [((expression (== ite) a (? string? b) (? string? c)) (? string?))
+     (ite a (string-append b y) (string-append c y))]
+    [(_ _) (expression @string-append x y)]))
 
 (define (string-append-simplify xs)
   (match xs
@@ -91,10 +122,7 @@
   (match xs
     [`() ""]
     [(list x) x]
-    [(list x y)
-     (match* (x y)
-       [((? string?) (? string?)) (string-append x y)]
-       [(_ _) (expression @string-append x y)])]
+    [(list x y) (simplify-string-append x y)]
     [_
      (match (string-append-simplify xs)
        [(list x) x]
