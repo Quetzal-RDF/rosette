@@ -132,7 +132,7 @@
      ((-) "-")
      ((RB) "]")
      ((:) ":")
-     ((ESC alit) $2))
+     ((ESC alit) (string-append "\\" $2)))
     (alit
      ((rilit) $1)
      ((RB) "]")
@@ -167,3 +167,6 @@
 
 ; This encoding is naive for now
 ;(parse-re #rx"[a-zA-Z]*foo+")
+
+; Edge case
+; (parse-re #rx"\\.[1-9][0-9]+")
