@@ -15,7 +15,7 @@
 ; core was extracted); or #f (if the solution is 
 ; 'unsat and no core was extracted).
 (define (read-solution)
-  (define port (current-input-port))
+  (define port (reencode-input-port (current-input-port) "UTF-8-permissive"))
   (match (read port)
     [(== 'sat)
      (let loop ()
