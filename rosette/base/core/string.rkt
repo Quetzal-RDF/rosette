@@ -42,8 +42,6 @@
 
 ;; ----------------- Lifting utilities ----------------- ;;
 
-; TODO are safe-apply-1 and safe-apply-2 usually called out for the sake of efficiency?
-
 (define (safe-apply-n op xs @ts?)
   (define caller (object-name op)) 
   (cond
@@ -97,8 +95,6 @@
   #:range T*->boolean?
   #:unsafe $=
   #:safe (lift-op $=))
-
-; TODO: Simplifications
 
 (define (simplify-string-append x y)
   (match* (x y)
@@ -169,10 +165,17 @@
   #:unsafe string->integer
   #:safe (lift-op string->integer))
 
+; substring
+(define (simplify-substring s i j)
+  (match* (s i j)
+    [(_ 0 0) ""]
+    [(_ 0 (expression (== @string-length) s)) s]
+    [(_ _ _) (expression @substring s i j)]))
+
 (define ($substring s i [j (@string-length s)])
   (if (and (string? s) (number? i) (number? j)) 
       (substring s i j)
-      (expression @substring s i j)))
+      (simplify-substring s i j)))
 
 (define (guarded-substring s i [j (@string-length s)])
   (assert (&& (@>= i 0) (@<= i j) (@<= j (@string-length s)))
@@ -185,10 +188,18 @@
   #:unsafe $substring
   #:safe (lift-op guarded-substring @string? @integer? @integer?))
 
+; string-contains?
+(define (simplify-string-contains? s p)
+  (match* (s p)
+    [(_ "") #t]
+    [("" x) (@string/equal? x "")]
+    [(x (expression (== @substring) x (? @integer? i) (? @integer? j))) #t] 
+    [(_ _) (expression @string-contains? s p)]))
+
 (define ($string-contains? s p)
   (if (and (string? s) (string? p))
       (string-contains? s p)
-      (expression @string-contains? s p)))
+      (simplify-string-contains? s p)))
 
 (define-operator @string-contains?
   #:identifier 'string-contains?
@@ -196,11 +207,20 @@
   #:unsafe $string-contains?
   #:safe (lift-op $string-contains?))
 
-; TODO match racket semantics, but for now, don't support #t (unsure how to encode)
+; string-replace
+; Note that in Racket, string-replace x "" y = (string-append y x) for all y, x
+(define (simplify-string-replace s from to all?)
+  (match* (s from to)
+    [(x "" y) (@string-append y x)]
+    [("" _ _) ""]
+    [(_ (== s) y) y]
+    [(_ _ _) (expression @string-replace-internal s from to all?)]))
+
+; String-replace matches Racket semantics, but doesn't support all? #t
 (define ($string-replace s from to [all? #t])
   (if (and (string? s) (string? from) (string? to))
       (string-replace s from to #:all? all?)
-      (expression @string-replace-internal s from to all?)))
+      (simplify-string-replace s from to all?)))
 
 (define-operator @string-replace-internal
   #:identifier 'string-replace
@@ -219,16 +239,32 @@
 (define (@string-replace s from to #:all? [all? #t])
   (@string-replace-internal s from to all?))
 
+; string-prefix?
+(define (simplify-string-prefix? s pre)
+  (match* (s pre)
+    [(_ "") #t]
+    [("" x) (@string/equal? x "")]
+    [(_ (== s)) #t]
+    [(_ _) (expression @string-prefix? s pre)]))
+
 (define ($string-prefix? s pre)
   (match* (s pre)
     [((? string?) (? string?)) (string-prefix? s pre)]
-    [(_ _) (expression @string-prefix? s pre)]))
+    [(_ _) (simplify-string-prefix? s pre)]))
  
 (define-operator @string-prefix?
   #:identifier 'string-prefix?
   #:range T*->boolean? 
   #:unsafe $string-prefix?
   #:safe (lift-op $string-prefix?))
+
+; string-suffix?
+(define (simplify-string-suffix? s suf)
+  (match* (s suf)
+    [(_ "") #t]
+    [("" x) (@string/equal? x "")]
+    [(_ (== s)) #t]
+    [(_ _) (expression @string-suffix? s suf)]))
 
 (define ($string-suffix? s suf)
   (if (and (string? s) (string? suf))
@@ -288,5 +324,3 @@
 (define @string-set! (impersonate-procedure string-set! disable-mutation))    
 (define @string-fill! (impersonate-procedure string-fill! disable-mutation))
 (define @string-copy! (impersonate-procedure string-copy! disable-mutation))
-
-; TODO tests

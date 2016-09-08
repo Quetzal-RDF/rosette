@@ -87,7 +87,7 @@
      ((lit) ($str.to.re (string->$str $1)))
      ((LMODE mode : re RP) (unsupported-regexp-error "(?<mode>:<re>)")) ; TODO Match ‹regexp› using ‹mode›
      ((FIRST re RP) $2) ; TODO since we don't support match, we don't care if it's first, but may eventually
-     ((look) $1)
+     ((look) $1) ; TODO supposed to be empty if look matches, this is wrong
      ((LMODE tst pces UNION pces RP) (unsupported-regexp-error "(?<test><pces>|<pces>)")) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
      ((LMODE tst pces RP) (unsupported-regexp-error "(?<test><pces>)"))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
     (rng

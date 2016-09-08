@@ -16,33 +16,6 @@
 (define-symbolic xi yi zi @integer?)
 (define-symbolic x y z @string?)
 
-; TODO simplifications! then test
-
-; TODO duplicate logic from real.rkt tests, refactor 
-(define-syntax-rule (check-cast (type val) (accepted? result))
-  (with-handlers ([exn:fail? (lambda (e) (check-equal? accepted? #f))])  
-    (let-values ([(actual-result asserts) (with-asserts (type-cast type val))])
-      (check-equal? actual-result result)
-      (match asserts
-        [(list)   (check-equal? accepted? #t)]
-        [(list v) (check-equal? accepted? v)]
-        [_ (fail "found more than 1 assertion")]))))
-
-; TODO duplicate logic from real.rkt tests, refactor
-(define-syntax-rule (check-valid? (op e ...) expected)
-  (let ([actual (op e ...)])
-    (check-equal? actual expected) 
-    ;(printf "ASSERTS: ~a\n" (asserts))
-    (define preconditions (asserts))
-    (clear-asserts!)
-    (check-pred unsat? (apply solve (! (@equal? (expression op e ...) expected)) preconditions))))
-
-; TODO duplicate logic from real.rkt tests, refactor
-(define-syntax-rule (check-state actual expected-value expected-asserts)
-  (let-values ([(v a) (with-asserts actual)])
-    (check-equal? v expected-value)
-    (check-equal? (apply set a) (apply set expected-asserts))))
-
 (define (check-string?)
   (check-equal? (@string? "") #t)
   (check-equal? (@string? "foo") #t)
@@ -64,10 +37,11 @@
 (define (check-string-append-no-args)
   (check-state (@string-append) "" (list)))
 
-; TODO: Need simplifications for these to work
-;(define (check-string-append-empty)
-  ;(check-valid? (@string-append "" x) x)
-  ;(check-valid? (@string-append x "") x)
+(define (check-string-append-simplifications)
+  (check-valid? (@string-append "" x) x)
+  (check-valid? (@string-append x "") x))
+
+  ; TODO these simplifications don't work yet
   ;(check-valid? (@string-append "" x y) (@string-append x y))
   ;(check-valid? (@string-append x "" y) (@string-append x y))
   ;(check-valid? (@string-append x y "") (@string-append x y)))
@@ -149,10 +123,11 @@
 ; TODO: Once we have simplifications, string->integer (integer->string) or the reverse
 
 (define (check-substring-empty)
-  (check-state (@substring "" 0) "" (list))
-  ;(check-valid? (@substring x 0 0) "")) TODO need simplification first
-  (check-pred unsat? (solve (not (@equal? "" (@substring x 0 0)))))
-  (clear-asserts!))
+  (check-state (@substring "" 0) "" (list)))
+
+(define (check-substring-simplifications)
+  (check-valid? (@substring x 0 0) "")
+  (check-valid? (@substring x 0 (@string-length x)) x))
 
 (define (check-substring-negative-i)
   (check-equal? (@substring x xi yi) (@substring x xi yi))
@@ -204,16 +179,12 @@
   (clear-asserts!)
   (check-state (@substring x 0 xi) (@substring x 0 xi) (list (&& (@<= 0 xi) (@<= xi (@string-length x)))))
   (clear-asserts!)
-  (check-state (@substring (merge a x #f) (merge b xi #f) (merge c yi #f)) (@substring x xi yi) (list (&& (@<= 0 xi) (@<= xi yi) (@<= yi (@string-length x))) a b c))
-  ;(check-valid? (@substring x 0) x) ; TODO need simplify first
-  (check-pred unsat? (solve (not (@equal? x (@substring x 0))))))
+  (check-state (@substring (merge a x #f) (merge b xi #f) (merge c yi #f)) (@substring x xi yi) (list (&& (@<= 0 xi) (@<= xi yi) (@<= yi (@string-length x))) a b c)))
 
-(define (check-string-contains?-empty)
-  ;(check-valid? (@string-contains? x "") #t) TODO need simplify first
-  (check-pred unsat? (solve (! (@string-contains? x ""))))
-  (clear-asserts!)
-  (check-pred unsat? (solve (@string-contains? "" x) (! (@equal? x ""))))
-  (clear-asserts!))
+(define (check-string-contains?-simplifications)
+  (check-valid? (@string-contains? x "") #t)
+  (check-valid? (@string-contains? "" x) (@equal? x "")))
+  ;(check-valid? (@string-contains? x (@substring x xi yi)) #t)) TODO hangs
 
 (define (check-string-contains?-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-contains? 'a ""))))
@@ -234,14 +205,11 @@
   (check-state (@string-contains? "foo" x) (@string-contains? "foo" x) (list))
   (check-state (@string-contains? x y) (@string-contains? x y) (list))
   (check-state (@string-contains? (merge a x #f) (merge b y #f)) (@string-contains? x y) (list a b)))
-  ;(check-valid? (@string-contains? x (@substring x xi yi)) #t) TODO need simplify first
 
-(define (check-string-prefix?-empty)
-  ;(check-valid? (@string-prefix? x "") #t) TODO need simplify first
-  (check-pred unsat? (solve (!(@string-prefix? x ""))))
-  (clear-asserts!)
-  (check-pred unsat? (solve (@string-prefix? "" x) (! (@equal? x ""))))
-  (clear-asserts!))
+(define (check-string-prefix?-simplifications)
+  (check-valid? (@string-prefix? x "") #t)
+  (check-valid? (@string-prefix? "" x) (@equal? x ""))
+  (check-valid? (@string-prefix? x x) #t))
 
 (define (check-string-prefix?-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-prefix? 'a ""))))
@@ -264,17 +232,12 @@
   (check-state (@string-prefix? (merge a x #f) (merge b y #f)) (@string-prefix? x y) (list a b))
   (check-pred unsat? (solve (@string-prefix? x y) (! (@string-contains? x y))))
   (check-pred unsat? (solve (@string-prefix? x y) (@= (@string-length x) (@string-length y)) (! (@equal? x y))))
-  (clear-asserts!)
-  ;(check-valid? (@string-prefix? x x) #t)) TODO need simplify first
-  (check-pred unsat? (solve (!(@string-prefix? x x))))
   (clear-asserts!))
 
-(define (check-string-suffix?-empty)
-  ;(check-valid? (@string-suffix? x "") #t) TODO need simplify first
-  (check-pred unsat? (solve (!(@string-suffix? x ""))))
-  (clear-asserts!)
-  (check-pred unsat? (solve (@string-suffix? "" x) (! (@equal? x ""))))
-  (clear-asserts!))
+(define (check-string-suffix?-simplifications)
+  (check-valid? (@string-suffix? x "") #t)
+  (check-valid? (@string-suffix? "" x) (@equal? x ""))
+  (check-valid? (@string-suffix? x x) #t))
 
 (define (check-string-suffix?-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-suffix? 'a ""))))
@@ -297,19 +260,13 @@
   (check-state (@string-suffix? (merge a x #f) (merge b y #f)) (@string-suffix? x y) (list a b))
   (check-pred unsat? (solve (@string-suffix? x y) (! (@string-contains? x y))))
   (check-pred unsat? (solve (@string-suffix? x y) (@= (@string-length x) (@string-length y)) (! (@equal? x y))))
-  (clear-asserts!)
-  ;(check-valid? (@string-suffix? x x) #t) TODO need simplify first
-  (check-pred unsat? (solve (! (@string-prefix? x x))))
   (clear-asserts!))
 
-; https://github.com/Z3Prover/z3/issues/703
-;(define (check-string-replace-empty) (TODO Z3 is broken and simplifications aren't implemented, so this fails regardless right now)
-  ;(check-valid? (@string-replace "" x y #:all? #f) "") need simplifications for this
-  ;(check-pred unsat? (solve (! (@equal? "" (@string-replace "" x y #:all? #f))))) ; This fails because Z3 is broken
-  ;(clear-asserts!)
-  ; (check-valid? (@string-replace x "" y #:all? #f) (@string-append y x)) need simplifications for this
-  ;(check-pred unsat? (solve (! (@equal? (@string-append y x) (@string-replace x "" y #:all? #f))))) ; This fails because Z3 is broken
-  ;(clear-asserts!))
+(define (check-string-replace-simplifications)
+  (check-pred unsat? (solve (! (@equal? "" (@string-replace "" x y #:all? #f)))))
+  (clear-asserts!)
+  (check-pred unsat? (solve (! (@equal? (@string-append y x) (@string-replace x "" y #:all? #f)))))
+  (clear-asserts!))
 
 ; Replace-all is not yet supported
 (define (check-string-replace-all)
@@ -344,8 +301,7 @@
   (check-state (@string-replace x y z #:all? #f) (@string-replace x y z #:all? #f) (list))
   (check-state (@string-replace (merge a x #f) (merge b y #f) (merge c z #f) #:all? #f) (@string-replace x y z #:all? #f) (list a b c))
   (clear-asserts!)
-  ; (check-valid? (@string-replace x x y #:all? #f) y) TODO need simplification for this
-  (check-pred unsat? (solve (! (@equal? y (@string-replace x x y #:all? #f))))) 
+  (check-pred unsat? (solve (! (@equal? y (@string-replace x x y #:all? #f)))))
   (clear-asserts!))
 
 ; The behavior for this is more like Racket substring than Z3 string-at - we don't allow invalid indexes
@@ -472,7 +428,7 @@
   (test-suite+
    "Tests for string-append in rosette/base/string.rkt"
    (check-string-append-no-args)
-   ;(check-string-append-empty) TODO
+   (check-string-append-simplifications)
    (check-string-append-types)
    (check-string-append-lit)
    (check-string-append-symbolic))) 
@@ -506,6 +462,7 @@
   (test-suite+
    "Tests for substring in rosette/base/string.rkt"
    (check-substring-empty)
+   (check-substring-simplifications)
    (check-substring-negative-i)
    (check-substring-out-of-bounds)
    (check-substring-no-j)
@@ -516,7 +473,7 @@
 (define tests:string-contains?
   (test-suite+
    "Tests for string-contains? in rosette/base/string.rkt"
-   (check-string-contains?-empty)
+   (check-string-contains?-simplifications)
    (check-string-contains?-types)
    (check-string-contains?-lit)
    (check-string-contains?-symbolic)))
@@ -524,7 +481,7 @@
 (define tests:string-prefix?
   (test-suite+
    "Tests for string-prefix? in rosette/base/string.rkt"
-   (check-string-prefix?-empty)
+   (check-string-prefix?-simplifications)
    (check-string-prefix?-types)
    (check-string-prefix?-lit)
    (check-string-prefix?-sybmolic))) 
@@ -532,7 +489,7 @@
 (define tests:string-suffix?
   (test-suite+
    "Tests for string-suffix? in rosette/base/string.rkt"
-   (check-string-suffix?-empty)
+   (check-string-suffix?-simplifications)
    (check-string-suffix?-types)
    (check-string-suffix?-lit)
    (check-string-suffix?-sybmolic)))
@@ -540,7 +497,7 @@
 (define tests:string-replace
   (test-suite+
    "Tests for string-replace in rosette/base/string.rkt"
-   ;(check-string-replace-empty)
+   (check-string-replace-simplifications)
    (check-string-replace-all)
    (check-string-replace-types)
    (check-string-replace-lit)

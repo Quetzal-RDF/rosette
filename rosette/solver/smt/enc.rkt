@@ -67,7 +67,7 @@
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @string->integer) s)
-     ($str->int (env s env))] 
+     ($str->int (env s env))]
     [(expression (== @substring) s i j)
      ($substr (enc s env) (enc i env) (enc j env))]
     [(expression (== @string-replace-internal) s from to all?)
@@ -180,6 +180,7 @@
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
 
 ; TODO, can't do this because of type system, need to find a better way to reconcile semantics
+; see emina email
 (define ($str->int s) 
   (define i ($str.to.int s))
   ($ite ($= i 0) $false i))

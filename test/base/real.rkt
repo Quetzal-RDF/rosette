@@ -19,15 +19,6 @@
 (define maxval 4)
 (define maxval+1 5)
 
-
-(define-syntax-rule (check-valid? (op e ...) expected)
-  (let ([actual (op e ...)])
-    (check-equal? actual expected) 
-    ;(printf "ASSERTS: ~a\n" (asserts))
-    (define preconditions (asserts))
-    (clear-asserts!)
-    (check-pred unsat? (apply solve (! (@equal? (expression op e ...) expected)) preconditions))))
-
 (define-syntax-rule (test-valid? ([var sym] ...) (op e ...) expected)
   (let ([actual (op e ...)])
     (check-equal? actual expected)
@@ -39,16 +30,6 @@
       (and (for/and ([pre preconditions]) (evaluate pre sol))
            ;(printf "sol: ~a\n" sol)
            (check-true (evaluate (@equal? (expression op e ...) expected) sol))))))
-
-
-(define-syntax-rule (check-cast (type val) (accepted? result))
-  (with-handlers ([exn:fail? (lambda (e) (check-equal? accepted? #f))])  
-    (let-values ([(actual-result asserts) (with-asserts (type-cast type val))])
-      (check-equal? actual-result result)
-      (match asserts
-        [(list)   (check-equal? accepted? #t)]
-        [(list v) (check-equal? accepted? v)]
-        [_ (fail "found more than 1 assertion")]))))
 
 (define (check-cmp-semantics op x y)
   (for* ([i (in-range minval maxval+1)]
@@ -86,11 +67,6 @@
      (check-exn exn:fail? (thunk (with-asserts-only expr)))]
     [(_ pred expr)
      (check-exn pred (thunk (with-asserts-only expr)))]))
-
-(define-syntax-rule (check-state actual expected-value expected-asserts)
-  (let-values ([(v a) (with-asserts actual)])
-    (check-equal? v expected-value)
-    (check-equal? (apply set a) (apply set expected-asserts))))
 
 (define (check-real?)
   (check-equal? (@real? 1) #t)

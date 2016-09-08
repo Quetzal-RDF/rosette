@@ -8,13 +8,15 @@
   (escape-string
    (bytes->string/utf-8
     (apply bytes-append
-           (for/list ([b (string->bytes/utf-8 s)])
+           (for/list ([b (string->bytes/utf-8 s)])    
              (cond
-               [(and (>= b 32) (<= b 126)) (bytes b)]
+               [(or (and (>= b 32) (<= b 126)) (>= b 128)) (bytes b)]
                [(< b #x10)
                 (string->bytes/utf-8 (format "\\x0~x" b))]
-               [(or (and (>= b #x10) (< b 32)) (> b 126))
+               [(or (and (>= b #x10) (< b 32)) (= b 127))
                 (string->bytes/utf-8 (format "\\x~x" b))]))))))
+
+; TODO still a problem with extended ASCII (>= 128) which is not being read in correctly
 
 (define (escape-string s)
   (string-append "\"" s "\""))
