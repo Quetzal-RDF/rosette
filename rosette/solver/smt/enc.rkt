@@ -67,7 +67,7 @@
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
     [(expression (== @string->integer) s)
-     ($str->int (env s env))]
+     ($str->int (enc s env))]
     [(expression (== @substring) s i j)
      ($substr (enc s env) (enc i env) (enc j env))]
     [(expression (== @string-replace-internal) s from to all?)
@@ -128,7 +128,6 @@
   ; string
   [@string/equal? $=]
   [@string-append $str.++] [@string-length $str.len]
-  [@integer->string $int.to.str]
   [@string-contains? $str.contains] [@string-at $str.at]
   ; regex
   [@string->regexp $str.to.re] [@regexp-range $re.range]

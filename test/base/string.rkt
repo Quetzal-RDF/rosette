@@ -350,20 +350,15 @@
   (clear-asserts!)
   (check-state (@string-at (merge a x #f) (merge b xi #f)) (@string-at x xi) (list a b (&& (@<= 0 xi) (@< xi (@string-length x)) (@<= 1 (@string-length x)))))
   (clear-asserts!)
-  ;(check-valid? (@string-at x xi) (@substring x xi (@+ xi 1))) TODO need simplifications for this
   (define xc (@string-at x xi))
   (define preconditions (asserts))
   (clear-asserts!)
   (check-pred unsat? (solve (! (@equal? xc (@substring x xi (@+ xi 1)))) (first preconditions)))
-  (clear-asserts!)) 
+  (clear-asserts!))
 
-(define (check-string-index-of-empty)
-  ;(check-valid? (@string-index-of x "" xi) 0) TODO need simplifications for this
-  (define i (@string-index-of x "" xi))
-  (check-pred unsat? (solve (! (@= i 0)) (first (asserts))))
-  (clear-asserts!)
-  (define j (@string-index-of "" x xi))
-  (check-pred unsat? (solve (@>= j 0) (! (@equal? x "")) (first (asserts))))
+(define (check-string-index-of-simplifications)
+  (check-valid? (@string-index-of x "" xi) 0)
+  (check-pred unsat? (solve (! (@equal? x "")) (! (@equal? (@string-index-of "" x xi) -1))))
   (clear-asserts!))
 
 (define (check-string-index-of-not-contains)
@@ -516,7 +511,7 @@
 (define tests:string-index-of
   (test-suite+
    "Tests for string-index-of in rosette/base/string.rkt"
-   (check-string-index-of-empty)
+   (check-string-index-of-simplifications)
    (check-string-index-of-not-contains)
    (check-string-index-of-negative-offset)
    (check-string-index-of-out-of-bounds)

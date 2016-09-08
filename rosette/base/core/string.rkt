@@ -141,10 +141,12 @@
   #:unsafe $string-length
   #:safe (lift-op $string-length))
 
+; integer->string
+; TODO number->string, radixes
 (define (integer->string i)
   (match i
-    [(? integer? x) (number->string x)]
-    [x (expression @integer->string x)]))
+    [(? integer? x) (number->string x radix)]
+    [_ (expression @integer->string x)]))
   
 (define-operator @integer->string
   #:identifier 'integer->string
@@ -152,11 +154,13 @@
   #:unsafe integer->string
   #:safe (lift-op integer->string @integer?))
 
+; string->integer
+; TODO string->number, #f, Z3 semantics
 (define (string->integer s)
   (match s
     [(? string? x)
      (let ((n (string->number s)))
-       (if (integer? n) n #f))] 
+       (if (integer? n) n 0))] 
     [x (expression @string->integer x)]))
 
 (define-operator @string->integer
@@ -269,7 +273,7 @@
 (define ($string-suffix? s suf)
   (if (and (string? s) (string? suf))
       (string-suffix? s suf)
-      (expression @string-suffix? s suf)))
+      (simplify-string-suffix? s suf)))
               
 (define-operator @string-suffix?
   #:identifier 'string-suffix?
@@ -277,6 +281,7 @@
   #:unsafe $string-suffix?
   #:safe (lift-op $string-suffix?))
 
+; string-at
 (define (string-at s offset)
   (if (and (string? s) (number? offset))
       (@substring s offset (+ offset 1))
@@ -293,6 +298,13 @@
   #:unsafe string-at
   #:safe (lift-op guarded-string-at @string? @integer?))
 
+; string-index-of
+(define (simplify-string-index-of s sub offset)
+  (match* (s sub offset)
+    [(_ "" _) 0]
+    [("" _ _) -1]
+    [(_ _ _) (expression @string-index-of s sub offset)])) 
+
 (define (index-of s sub offset)
   (if (@string-contains? s sub)
      (let ([len-sub (@string-length sub)] [len (@string-length s)])
@@ -305,7 +317,7 @@
 (define (string-index-of s sub [offset 0])
   (if (and (string? s) (string? sub) (number? offset))
       (index-of s sub offset)
-      (expression @string-index-of s sub offset)))
+      (simplify-string-index-of s sub offset)))
 
 (define (guarded-string-index-of s sub [offset 0])
   (assert (&& (@<= 0 offset) (@< offset (@string-length s))) (thunk (error 'string-index-of "offset out of bounds")))
