@@ -81,15 +81,18 @@
   (check-state (@string-length x) (@string-length x) (list))
   (check-state (@string-length (merge a x #f)) (@string-length x) (list a)))
 
+(define (check-string->integer-simplifications) ; Broken by Z3
+  (check-valid? (@string->integer (@integer->string xi)) xi))
+
 (define (check-string->integer-empty)
-  (check-state (@string->integer "") #f (list)))
+  (check-state (@string->integer "") 0 (list)))
   
 (define (check-string->integer-non-number)
-  (check-state (@string->integer "foo") #f (list))
-  (check-state (@string->integer "foo1") #f (list)))
+  (check-state (@string->integer "foo") 0 (list))
+  (check-state (@string->integer "foo1") 0 (list)))
 
 (define (check-string->integer-non-integer)
-  (check-state (@string->integer "1.2") #f (list)))
+  (check-state (@string->integer "1.2") 0 (list)))
 
 (define (check-string->integer-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string->integer 'a))))
@@ -103,6 +106,9 @@
 (define (check-string->integer-symbolic)
   (check-state (@string->integer x) (@string->integer x) (list))
   (check-state (@string->integer (merge a x #f)) (@string->integer x) (list a)))
+
+(define (check-integer->string-simplifications)  
+  (check-valid? (@integer->string (@string->integer (@integer->string xi))) (@integer->string xi))) 
 
 (define (check-integer->string-types)
   (check-exn #px"expected integer?" (thunk (with-asserts-only (@integer->string 'a))))
@@ -120,7 +126,6 @@
   (check-state (@integer->string xr) (@integer->string (@real->integer xr)) (list (@int? xr)))
   (check-state (@integer->string (merge a xi #f)) (@integer->string xi) (list a))
   (check-state (@integer->string (merge a xr #f)) (@integer->string (@real->integer xr)) (list (&& a (@int? xr)))))
-; TODO: Once we have simplifications, string->integer (integer->string) or the reverse
 
 (define (check-substring-empty)
   (check-state (@substring "" 0) "" (list)))
@@ -451,6 +456,7 @@
 (define tests:string->integer
   (test-suite+
    "Tests for string->integer in rosette/base/string.rkt"
+   (check-string->integer-simplifications)
    (check-string->integer-empty)
    (check-string->integer-non-number)
    (check-string->integer-non-integer)
@@ -461,9 +467,10 @@
 (define tests:integer->string
   (test-suite+
    "Tests for integer->string in rosette/base/string.rkt"
+   (check-integer->string-simplifications)
    (check-integer->string-types)
    (check-integer->string-lit)
-   (check-integer->string-symbolic))) 
+   (check-integer->string-symbolic)))
 
 (define tests:substring
   (test-suite+

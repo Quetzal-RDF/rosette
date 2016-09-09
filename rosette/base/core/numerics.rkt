@@ -8,6 +8,7 @@
 (provide @number? @positive? @negative? @zero? @even? @odd?
          @add1 @sub1 @sgn @truncate @floor @ceiling @min @max
          @exact->inexact @inexact->exact @expt
+         @number->string @string->number
          ;@sqrt @bitwise-not @bitwise-and @bitwise-ior @bitwise-xor
          ;@<< @>> @>>> @bitwise-bit-set? @bitwise-bit-field
          )
@@ -80,3 +81,51 @@
          (apply @* (make-list w z))
          (@/ 1 (@* (make-list (- w) z))))]
     [(_ _) (expt z w)]))
+
+; string->number and number->string only support integers and radix 10 for now
+; (TODO see if possible to support reals, other radixes)
+; TODO simplifications
+(define ($string->number s [radix 10])
+  (match s
+    [(? string?) (string->number s)]
+    [_
+     (let ([i (@string->integer s)])
+       (if (and (@= i 0) (@! (@string/equal? s "0"))) #f i))]))
+
+(define ($guarded-string->number s [radix 10])
+  (assert (@= radix 10) (arguments-error 'string->number "expected 10" "radix" radix))
+  (let ([n ($string->number s)])
+    (assert
+     (or (@integer? n) (@boolean? n))
+     (arguments-error 'string->number "expected a string? representation of an integer?" "s" s))
+    n))
+
+(define-operator @string->number
+  #:identifier 'string->number
+  #:range (const (or/c @number? @boolean?))
+  #:unsafe $string->number
+  #:safe
+  (lambda (s [radix 10])
+    ($guarded-string->number
+     (type-cast @string? s 'string->number)
+     (type-cast @integer? radix 'string->number))))
+
+(define ($number->string n [radix 10])
+  (match n
+    [(? integer?) (number->string n radix)]
+    [_ (@integer->string n)]))
+
+(define ($guarded-number->string n [radix 10])
+  (assert (@= radix 10) (arguments-error 'number->string "expected 10" "radix" radix))
+  ($number->string n radix))
+
+(define-operator @number->string
+  #:identifier 'number->string
+  #:range T*->string?
+  #:unsafe $number->string
+  #:safe
+  (lambda (n [radix 10])
+    ($guarded-number->string
+     (type-cast @integer? n 'number->string)
+     (type-cast @integer? radix 'number->string))))
+

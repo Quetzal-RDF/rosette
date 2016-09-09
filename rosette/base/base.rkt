@@ -26,7 +26,8 @@
      ; core/numerics.rkt
      @number? @positive? @negative? @zero? @even? @odd?
      @add1 @sub1 @sgn @truncate @floor @ceiling @min @max
-     @exact->inexact @inexact->exact @expt 
+     @exact->inexact @inexact->exact @expt
+     @number->string @string->number
      ; core/bitvector.rkt
      bv @bv? bitvector bitvector-size bitvector? 
      @bveq @bvslt @bvsgt @bvsle @bvsge @bvult @bvugt @bvule @bvuge
@@ -48,9 +49,8 @@
      ; core/string.rkt
      @string? @string-append @string-length @substring
      @string-contains? @string-prefix? @string-suffix?
-     @string-replace @string->integer @integer->string
-     @string-at @string-index-of @string-set! @string-fill!
-     @string-copy!
+     @string-replace @string-at @string-index-of
+     @string-set! @string-fill! @string-copy!
      ; core/regexp.rkt
      @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
      @regexp-all @regexp-none @regexp-concat @regexp-range

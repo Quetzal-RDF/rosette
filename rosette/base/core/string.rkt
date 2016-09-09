@@ -143,11 +143,16 @@
   #:safe (lift-op $string-length))
 
 ; integer->string
-; TODO number->string, radixes
+(define (simplify-integer->string i)
+  (match i
+    [(expression (== @string->integer) s)
+     (if (@= (@string->integer s) 0) "0" s)]
+    [_ (expression @integer->string i)]))
+
 (define (integer->string i)
   (match i
     [(? integer?) (number->string i)]
-    [_ (expression @integer->string i)]))
+    [_ (simplify-integer->string i)]))
   
 (define-operator @integer->string
   #:identifier 'integer->string
@@ -156,13 +161,17 @@
   #:safe (lift-op integer->string @integer?))
 
 ; string->integer
-; TODO string->number, #f, Z3 semantics
+(define (simplify-string->integer s)
+  (match s
+    [(expression (== @integer->string) (? @integer? i)) i]
+    [_ (expression @string->integer s)]))
+
 (define (string->integer s)
   (match s
-    [(? string? x)
+    [(? string?)
      (let ((n (string->number s)))
        (if (integer? n) n 0))] 
-    [x (expression @string->integer x)]))
+    [_ (simplify-string->integer s)]))
 
 (define-operator @string->integer
   #:identifier 'string->integer

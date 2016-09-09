@@ -66,8 +66,6 @@
      ($bv->int (enc v env) (bitvector-size (get-type v)))]  
     [(expression (== @bitvector->natural) v) 
      ($bv->nat (enc v env) (bitvector-size (get-type v)))]
-    [(expression (== @string->integer) s)
-     ($str->int (enc s env))]
     [(expression (== @substring) s i j)
      ($substr (enc s env) (enc i env) (enc j env))]
     [(expression (== @string-replace-internal) s from to all?)
@@ -127,6 +125,7 @@
   [@string/equal? $=]
   [@string-append $str.++] [@string-length $str.len]
   [@string-contains? $str.contains] [@string-at $str.at]
+  [@string->integer $str.to.int] [@integer->string $int.to.str]
   [@index-of $str.indexof]
   ; regex
   [@string->regexp $str.to.re] [@regexp-range $re.range]
@@ -176,12 +175,6 @@
   (define bv0 ($bv 0 n))
   (define b (expt 2 i))
   ($ite ($= bv0 ($bvand v ($bv b n))) 0 b))
-
-; TODO, can't do this because of type system, need to find a better way to reconcile semantics
-; see emina email
-(define ($str->int s) 
-  (define i ($str.to.int s))
-  ($ite ($= i 0) $false i))
 
 (define ($substr s i j) 
   ($str.substr s i ($- j i)))
