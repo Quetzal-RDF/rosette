@@ -8,7 +8,8 @@
          @string-contains? @string-prefix? @string-suffix?
          @string-replace @string-replace-internal
          @string->integer @integer->string
-         @string-at @string-index-of @string-set! @string-fill!
+         @string-at @string-index-of @index-of
+         @string-set! @string-fill!
          @string-copy! T*->string?)
 
 (define-lifted-type @string?
@@ -145,8 +146,8 @@
 ; TODO number->string, radixes
 (define (integer->string i)
   (match i
-    [(? integer? x) (number->string x radix)]
-    [_ (expression @integer->string x)]))
+    [(? integer?) (number->string i)]
+    [_ (expression @integer->string i)]))
   
 (define-operator @integer->string
   #:identifier 'integer->string
@@ -298,13 +299,37 @@
   #:unsafe string-at
   #:safe (lift-op guarded-string-at @string? @integer?))
 
-; string-index-of
+; string-index-of with Racket-like semantics even though
+; this is not a Racket function;
+; missing indexes return #f instead of -1
 (define (simplify-string-index-of s sub offset)
   (match* (s sub offset)
     [(_ "" _) 0]
-    [("" _ _) -1]
-    [(_ _ _) (expression @string-index-of s sub offset)])) 
+    [("" _ _) #f]
+    [(_ (== s) 0) 0]  
+    [(_ _ _)
+     (let ([index (@index-of s sub offset)])
+       (if (@>= index 0)
+           index
+           #f))]))
 
+(define ($string-index-of s sub [offset 0])
+  (match* (s sub offset)
+    [((? string?) (? string?) (? number?)) (index-of s sub offset)]
+    [(_ _ _) (simplify-string-index-of s sub offset)]))
+
+(define (guarded-string-index-of s sub [offset 0])
+  (assert (@<= 0 offset) (thunk (error 'string-index-of "negative offset" offset)))
+  (assert (@< offset (@string-length s)) (thunk (error 'string-index-of "offset out of bounds" offset)))
+  ($string-index-of s sub offset))
+
+(define-operator @string-index-of
+  #:identifier 'string-index-of
+  #:range T*->integer?
+  #:unsafe $string-index-of
+  #:safe (lift-op guarded-string-index-of @string? @string? @integer?))
+
+; string-index-of internal representation
 (define (index-of s sub offset)
   (if (@string-contains? s sub)
      (let ([len-sub (@string-length sub)] [len (@string-length s)])
@@ -312,22 +337,19 @@
          (if (@string-contains? (@substring s i (+ i len-sub)) sub)
              i
              #f)))
-     -1))
+     #f))
 
-(define (string-index-of s sub [offset 0])
+(define ($index-of s sub [offset 0])
   (if (and (string? s) (string? sub) (number? offset))
-      (index-of s sub offset)
-      (simplify-string-index-of s sub offset)))
+      (let ([index (index-of s sub offset)])
+        (if index index -1))
+      (expression @index-of s sub offset)))
 
-(define (guarded-string-index-of s sub [offset 0])
-  (assert (&& (@<= 0 offset) (@< offset (@string-length s))) (thunk (error 'string-index-of "offset out of bounds")))
-  (string-index-of s sub offset))
-
-(define-operator @string-index-of
-  #:identifier 'string-index-of
+(define-operator @index-of
+  #:identifier 'index-of
   #:range T*->integer?
-  #:unsafe string-index-of
-  #:safe (lift-op guarded-string-index-of @string? @string? @integer?))
+  #:unsafe $index-of
+  #:safe (lift-op $index-of @string? @string? @integer?))
 
 ; We are going to disable all mutation operations on strings.
 

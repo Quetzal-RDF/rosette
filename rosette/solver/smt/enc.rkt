@@ -22,7 +22,7 @@
                   @string/equal? @string-append @string-length @substring
                   @string-contains? @string-prefix? @string-suffix?
                   @string->integer @integer->string
-                  @string-at @string-index-of @string-replace-internal)
+                  @string-at @index-of @string-replace-internal)
          (only-in "../../base/core/regexp.rkt"
                   @regexp @regexp-quote @regexp-match-exact? @string->regexp
                   @regexp-all @regexp-none @regexp-concat @regexp-range
@@ -76,8 +76,6 @@
      ($str.prefixof (enc pre env) (enc s env))]
     [(expression (== @string-suffix?) s suf)
      ($str.suffixof (enc suf env) (enc s env))]
-    [(expression (== @string-index-of) s sub offset)
-     ($strindexof (enc s env) (enc sub env) (enc offset env))]
     [(expression (== @regexp-match-exact?) r s)
      ($str.in.re (enc s env) (enc r env))]
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
@@ -129,6 +127,7 @@
   [@string/equal? $=]
   [@string-append $str.++] [@string-length $str.len]
   [@string-contains? $str.contains] [@string-at $str.at]
+  [@index-of $str.indexof]
   ; regex
   [@string->regexp $str.to.re] [@regexp-range $re.range]
   [@regexp-star $re.*] [@regexp-plus $re.+] [@regexp-opt $re.opt]
@@ -187,7 +186,3 @@
 (define ($substr s i j) 
   ($str.substr s i ($- j i)))
 
-; TODO, can't do this because of type system, need to find a better way to reconcile semantics
-(define ($strindexof s sub offset)
-  (define i ($str.indexof s sub offset))
-  ($ite ($< i 0) $false i))
