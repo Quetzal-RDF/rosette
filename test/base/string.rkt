@@ -186,8 +186,11 @@
 
 (define (check-string-contains?-simplifications)
   (check-valid? (@string-contains? x "") #t)
-  (check-valid? (@string-contains? "" x) (@equal? x "")))
-  ;(check-valid? (@string-contains? x (@substring x xi yi)) #t)) TODO hangs
+  (check-valid? (@string-contains? "" x) (@equal? x ""))
+  ; Z3 cannot yet handle unbounded lengths for this query; see https://github.com/Z3Prover/z3/issues/812
+  (@assert (@<= (@string-length x) 5))
+  (check-valid? (@string-contains? x (@substring x xi yi)) #t)
+  (clear-asserts!)) 
 
 (define (check-string-contains?-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-contains? 'a ""))))
