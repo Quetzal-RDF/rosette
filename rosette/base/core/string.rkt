@@ -97,7 +97,9 @@
   #:unsafe $=
   #:safe (lift-op $=))
 
-(define (simplify-string-append x y)
+; string-append
+; Simplifications for two values
+(define (simplify-string-append-2 x y)
   (match* (x y)
     [((? string?) (? string?)) (string-append x y)]
     [(_ "") x]
@@ -106,10 +108,13 @@
      (ite a (string-append b y) (string-append c y))]
     [(_ _) (expression @string-append x y)]))
 
+; Simplifications for more values
 (define (string-append-simplify xs)
   (match xs
     [(list) xs]
     [(list _) xs]
+    [(list x y) (list (simplify-string-append-2 x y))]
+    [(list "" rest ...) (string-append-simplify rest)]
     [(list-rest (? string? x) ..2 rest)
      (list* (apply string-append x) (string-append-simplify rest))]
     [(list x rest ...)
@@ -119,7 +124,7 @@
   (match xs
     [`() ""]
     [(list x) x]
-    [(list x y) (simplify-string-append x y)]
+    [(list x y) (simplify-string-append-2 x y)]
     [_
      (match (string-append-simplify xs)
        [(list x) x]
@@ -131,6 +136,7 @@
   #:unsafe $string-append
   #:safe (lift-op $string-append))
 
+; string-length
 (define ($string-length s)
   (match s
     [(? string? x) (string-length x)]
@@ -223,6 +229,7 @@
 
 ; string-replace
 ; Note that in Racket, string-replace x "" y = (string-append y x) for all y, x
+; SMTLib standards also dictate this (see https://github.com/Z3Prover/z3/issues/703)
 (define (simplify-string-replace s from to all?)
   (match* (s from to)
     [(x "" y) (@string-append y x)]

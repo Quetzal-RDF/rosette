@@ -39,12 +39,10 @@
 
 (define (check-string-append-simplifications)
   (check-valid? (@string-append "" x) x)
-  (check-valid? (@string-append x "") x))
-
-  ; TODO these simplifications don't work yet
-  ;(check-valid? (@string-append "" x y) (@string-append x y))
-  ;(check-valid? (@string-append x "" y) (@string-append x y))
-  ;(check-valid? (@string-append x y "") (@string-append x y)))
+  (check-valid? (@string-append x "") x)
+  (check-valid? (@string-append "" x y) (@string-append x y))
+  (check-valid? (@string-append x "" y) (@string-append x y))
+  (check-valid? (@string-append x y "") (@string-append x y)))
 
 (define (check-string-append-types)
   (check-exn #px"expected a string?" (thunk (with-asserts-only (@string-append 'a))))
@@ -538,8 +536,6 @@
    (check-string-index-of-no-offset)
    (check-string-index-of-offset)
    (check-string-index-of-symbolic)))
-
-; TODO test that strings are immutable
 
 (time (run-tests tests:string?))
 (time (run-tests tests:string-append))
