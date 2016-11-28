@@ -6,6 +6,7 @@
          rosette/base/core/bool
          rosette/base/core/real
          rosette/base/core/procedure
+         rosette/base/core/string
          rosette/base/adt/box
          rosette/base/adt/list
          rosette/base/adt/vector
@@ -16,6 +17,8 @@
 (define-symbolic x y z @integer?)
 
 (define-symbolic a b c @boolean?)
+
+(define-symbolic s1 s2 s3 @string?)
 
 ; transparent immutable structs 
 (struct i0 (x) #:transparent)
@@ -46,20 +49,25 @@
 (struct m1 p2 ([m #:mutable]))
 (struct m2 i0 (m) #:mutable #:transparent)
 
-(define (primitive-equality-tests =?)
+(define (primitive-equality-tests =?) 
   (check-equal? (=? x x) #t)
   (check-equal? (=? a a) #t)
+  (check-equal? (=? s1 s1) #t)
   (check-equal? (=? x y) (@= x y))
   (check-equal? (=? a b) (<=> a b))
+  (check-equal? (=? s1 s2) (@string/equal? s1 s2))
   (check-equal? (=? x a) #f)
   (check-equal? (=? x 1) (@= x 1))
   (check-equal? (=? a #t) a)
   (check-equal? (=? a #f) (! a))
+  (check-equal? (=? s1 a) #f)
+  (check-equal? (=? s1 "foo") (@string/equal? s1 "foo"))
   (check-equal? (=? 1 1) #t)
   (check-equal? (=? 1 0) #f)
   (check-equal? (=? #t #t) #t)
   (check-equal? (=? #f #f) #t)
   (check-equal? (=? #t #f) #f)
+  (check-equal? (=? "foo" "foo") #t)
   (check-equal? (=? (@+ x y) (@+ x y)) #t))
 
 (define (box-equality-tests @box =?)

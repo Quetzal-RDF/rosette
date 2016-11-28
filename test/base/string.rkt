@@ -5,6 +5,7 @@
          rosette/base/core/term rosette/base/core/string
          rosette/base/core/bool
          rosette/base/core/merge
+         rosette/base/core/polymorphic 
          (only-in rosette/base/core/real @integer? @int? @real? @real->integer @= @<= @>= @< @> @+)
          (only-in rosette/base/form/define define-symbolic define-symbolic*)
          (only-in rosette/base/core/equality @equal?)
@@ -33,6 +34,23 @@
   (check-cast (@string? x) (#t x))
   (check-cast (@string? (merge a x #f)) (a x))
   (check-cast (@string? (merge a b #f)) (#f (merge a b #f))))
+
+(define (check-=-simplifications)
+  (check-valid? (@string/equal? "foo" "foo") #t)
+  (check-valid? (@string/equal? "foo" "bar") #f)
+  (check-valid? (@string/equal? x x) #t)
+  (check-valid? (@string/equal? (ite b "foo" "bar") "foo") b)
+  (check-valid? (@string/equal? (ite b "foo" "bar") "bar") (! b))
+  (check-valid? (@string/equal? (ite b "foo" "bar") "baz") #f)
+  (check-valid? (@string/equal? "foo" (ite b "foo" "bar")) b)
+  (check-valid? (@string/equal? "bar" (ite b "foo" "bar")) (! b))
+  (check-valid? (@string/equal? "baz" (ite b "foo" "bar")) #f)
+  (check-valid? (@string/equal? (ite a "foo" "foo") (ite b "foo" "foo")) #t)
+  (check-valid? (@string/equal? (ite a "foo" "bar") (ite b "baz" "")) #f)
+  (check-valid? (@string/equal? (ite a "foo" "bar") (ite b "foo" "baz")) (&& a b))
+  (check-valid? (@string/equal? (ite a "foo" "bar") (ite b "baz" "foo")) (&& a (! b)))
+  (check-valid? (@string/equal? (ite a "foo" "bar") (ite b "bar" "baz")) (&& (! a) b))
+  (check-valid? (@string/equal? (ite a "foo" "bar") (ite b "baz" "bar")) (&& (! a) (! b))))
 
 (define (check-string-append-no-args)
   (check-state (@string-append) "" (list)))
@@ -433,9 +451,10 @@
   (test-suite+
    "Tests for string? in rosette/base/string.rkt"
    (check-string?)
-   (check-string-cast)))
+   (check-string-cast)
+   (check-=-simplifications)))
 
-; TODO do I need to test string/equal? string/compress? etc
+; TODO do I need to test string/compress? 
 
 (define tests:string-append
   (test-suite+
