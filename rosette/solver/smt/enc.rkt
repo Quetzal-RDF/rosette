@@ -27,8 +27,7 @@
          (only-in "../../base/core/regexp.rkt"
                   @regexp @regexp-quote @regexp-match-exact? @string->regexp
                   @regexp-all @regexp-none @regexp-concat @regexp-range
-                  @regexp-star @regexp-plus @regexp-opt @regexp-loop
-                  @regexp-union @regexp-inter))
+                  @regexp-star @regexp-plus @regexp-opt @regexp-union))
 
 (provide enc)
 
@@ -81,7 +80,7 @@
      ($str.prefixof (enc pre env) (enc s env))]
     [(expression (== @string-suffix?) s suf)
      ($str.suffixof (enc suf env) (enc s env))]
-    [(expression (== @regexp-match-exact?) r s)
+    [(expression (== @regexp-match-exact?) r s) ; TODO handle string r
      ($str.in.re (enc s env) (enc r env))]
     [(expression (and (or (== @forall) (== @exists)) op) vars body)
      ((if (equal? op @forall) $forall $exists)
@@ -98,7 +97,6 @@
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
 
 ; TODO @regexp-concat to re.++: Squish to 3 args
-; TODO @regexp-loop to re.loop: Format arguments in the weird expected way
 
 (define (enc-const v env quantified) (ref! env v))
 
@@ -151,7 +149,7 @@
   ; regex
   [@string->regexp $str.to.re] [@regexp-range $re.range]
   [@regexp-star $re.*] [@regexp-plus $re.+] [@regexp-opt $re.opt]
-  [@regexp-union $re.union] [@regexp-inter $re.inter])
+  [@regexp-union $re.union])
 
 ; TODO @regexp @regexp-quote
 

@@ -5,8 +5,7 @@
 
 (provide @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
          @regexp-all @regexp-none @regexp-concat @regexp-range
-         @regexp-star @regexp-plus @regexp-opt @regexp-loop
-         @regexp-union @regexp-inter)
+         @regexp-star @regexp-plus @regexp-opt @regexp-union)
 
 (define (regexp/equal? x y)
   (match* (x y)
@@ -24,7 +23,9 @@
      (match v
        [(? regexp?) v]
        [(term _ (== self)) v]
-       [(union : [g (and (app type-of (== @regexp?)) u)] _ ...) (assert #f)] ;TODO don't know what to do here
+       [(union : [g (and (app type-of (== @regexp?)) u)] _ ...)
+        (assert g (thunk (raise-argument-error caller "expected a regexp?" v)))
+        u] 
        [_ (assert #f (thunk (raise-argument-error caller "expected a regexp?" v)))])) 
    (define (type-compress self force? ps) regexp/compress)])     
 
@@ -116,18 +117,25 @@
   #:unsafe $string->regexp
   #:safe (lift-op $string->regexp @string?))
 
+; regexp-match-exact?
 (define ($regexp-match-exact? pattern input)
   (if (and ((or/c string? regexp?) pattern) (string? input)) 
       (regexp-match-exact? pattern input)
       (expression @regexp-match-exact? pattern input)))
 
-; TODO need (or/c @string? regexp?) for 1st arg eventually
-(define-operator @regexp-match-exact?
+(define-operator @regexp-match-exact? 
   #:identifier 'regexp-match-exact?
   #:range T*->boolean?
   #:unsafe $regexp-match-exact?
-  #:safe (lift-op $regexp-match-exact? @regexp? @string?))
-
+  #:safe
+  (lambda (pattern input)
+    (define caller 'regexp-match-exact?)
+    (if (@string? pattern)
+        (@string/equal? pattern input)
+        ($regexp-match-exact?
+         (type-cast @regexp? pattern caller)
+         (type-cast @string? input caller)))))
+    
 (define (assert-string-char ch)
   (cond
     [(and (string? ch) (not (= (string-length ch) 1)))
@@ -215,17 +223,6 @@
   #:unsafe $regexp-opt
   #:safe (lift-op $regexp-opt))
 
-;((_ re.loop lo hi) r) 	from lo to hi number of repetitions of r.
-
-(define ($regexp-loop lo hi r) ; TODO ? need pregexp for this, revisit later
-  (assert "#f")) 
-
-(define-operator @regexp-loop
-  #:identifier 'regexp-loop
-  #:range T*->regexp?
-  #:unsafe $regexp-loop
-  #:safe (lift-op $regexp-loop @integer? @integer? @regexp?))
-
 (define ($regexp-union r1 r2) 
   (if (and (regexp? r1) (regexp? r2))
       (regexp (@string-append (object-name r1) "|" (object-name r2)))
@@ -236,17 +233,3 @@
   #:range T*->regexp?
   #:unsafe $regexp-union
   #:safe (lift-op $regexp-union))
-
-;(re.inter r1 r2) 	The intersection of regular languages.
-; TODO how do I even do this? using union + negation?
-; Or move into a struct for literals?
-; Then modify the match operator/other operators to check for intersection case?
-; Will revisit later
-(define ($regexp-inter r1 r2) 
-  (assert "#f")) 
-
-(define-operator @regexp-inter
-  #:identifier 'regexp-inter
-  #:range T*->regexp?
-  #:unsafe $regexp-inter
-  #:safe (lift-op $regexp-inter))

@@ -56,8 +56,7 @@
      ; core/regexp.rkt
      @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
      @regexp-all @regexp-none @regexp-concat @regexp-range
-     @regexp-star @regexp-plus @regexp-opt @regexp-loop
-     @regexp-union @regexp-inter
+     @regexp-star @regexp-plus @regexp-opt @regexp-union
      ; adt/box.rkt
      @box @box-immutable @box? @unbox @set-box!
      ; adt/list.rkt : Pair Constructors and Selectors
