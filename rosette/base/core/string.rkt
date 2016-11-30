@@ -237,7 +237,7 @@
     [(_ (== s) y) y]
     [(_ _ _) (expression @string-replace-internal s from to all?)]))
 
-; String-replace matches Racket semantics, but doesn't support all? #t
+; String-replace matches Racket semantics, but doesn't support all? #t or from of type regexp? yet
 (define ($string-replace s from to [all? #t])
   (if (and (string? s) (string? from) (string? to))
       (string-replace s from to #:all? all?)
@@ -253,7 +253,7 @@
     (assert (@! all?) (thunk (error caller "replace all not supported, use all? #f instead")))
     ($string-replace
      (type-cast @string? s caller)
-     (type-cast @string? from caller)  ;TODO for now, only accepts strings, eventually needs or/c string? regexp? 
+     (type-cast @string? from caller) 
      (type-cast @string? to caller)
      all?)))
 

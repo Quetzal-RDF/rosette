@@ -454,8 +454,6 @@
    (check-string-cast)
    (check-=-simplifications)))
 
-; TODO do I need to test string/compress? 
-
 (define tests:string-append
   (test-suite+
    "Tests for string-append in rosette/base/string.rkt"
