@@ -70,9 +70,9 @@
     (pces
      ((pce) $1)
      ((pce pces) ($re.++ $1 $2)))
-    (pce
-     ((repeat) $1) ; TODO since we don't support match, we don't care if it's shortest/longest, but may eventually
-     ((repeat ?) $1) ; TODO since we don't support match, we don't care if it's shortest/longest, but may eventually
+    (pce 
+     ((repeat) $1) ; since we only support match-exact, we don't care if it's shortest/longest, but we may eventually
+     ((repeat ?) $1)
      ((atom) $1))
     (repeat
      ((atom *) ($re.* $1))
@@ -81,13 +81,13 @@
     (atom
      ((LP re RP) $2)
      ((LB rng RB) $2) 
-     ((LBN rng RB) (unsupported-regexp-error "[^<rng>]")) ; TODO complement not yet supported in Z3, can't do algebraically, may need to bump up and handle earlier in enc as not
-     ((ANY) (unsupported-regexp-error ".")) ; TODO any single character; somehow need both allchar and length is one, but can't nest that in an re
-     ((^) (unsupported-regexp-error "^")) ; TODO start
-     (($) (unsupported-regexp-error "$")) ; TODO finish
+     ((LBN rng RB) (unsupported-regexp-error "[^<rng>]"))
+     ((ANY) (unsupported-regexp-error "."))
+     ((^) (unsupported-regexp-error "^"))
+     (($) (unsupported-regexp-error "$"))
      ((lit) ($str.to.re (string->$str $1)))
      ((LMODE mode : re RP) (unsupported-regexp-error "(?<mode>:<re>)"))
-     ((FIRST re RP) $2) ; TODO since we don't support match, we don't care if it's first, but may eventually
+     ((FIRST re RP) (unsupported-regexp-error "(?><mode>:<re>)"))
      ((look) $1)
      ((LMODE tst pces UNION pces RP) (unsupported-regexp-error "(?<test><pces>|<pces>)"))
      ((LMODE tst pces RP) (unsupported-regexp-error "(?<test><pces>)")))
@@ -161,13 +161,3 @@
 (define (parse-re re)
   (let ((input (open-input-string (object-name re))))
         (regexp-parser (lambda () (regexp-lexer input)))))
-
-; Test:
-;(parse-re #rx"a|b")
-;(parse-re #rx"[a-zA-Z]")
-
-; This encoding is naive for now
-;(parse-re #rx"[a-zA-Z]*foo+")
-
-; Edge case
-; (parse-re #rx"\\.[1-9][0-9]+")
