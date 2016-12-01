@@ -92,6 +92,7 @@
   #:unsafe regexp
   #:safe (lift-op $regexp @string?))
 
+; regexp-quote
 (define ($regexp-quote str [case-sensitive? #t])
   (if (string? str)
       (regexp-quote str case-sensitive?)
@@ -108,6 +109,7 @@
      (type-cast @string? str caller)
      case-sensitive?)))
 
+; string->regexp
 (define ($string->regexp str)
   (@regexp (@regexp-quote str)))
 
@@ -159,7 +161,7 @@
   #:unsafe $regexp-range
   #:safe (lift-op $guarded-regexp-range @string? @string?))
 
-;(re.++ r1 r2 r3) 	Concatenation of regular expressions.
+;(re.++ r1 r2 r3) Concatenation of regular expressions.
 ; Not sure why string-append was so complex to begin with, but using what's already done anyways
 ; TODO revisit to simplify later
 (define ($regexp-concat-simplify rs)

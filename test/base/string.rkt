@@ -5,7 +5,7 @@
          rosette/base/core/term rosette/base/core/string
          rosette/base/core/bool
          rosette/base/core/merge
-         rosette/base/core/polymorphic 
+         rosette/base/core/polymorphic
          (only-in rosette/base/core/real @integer? @int? @real? @real->integer @= @<= @>= @< @> @+)
          (only-in rosette/base/form/define define-symbolic define-symbolic*)
          (only-in rosette/base/core/equality @equal?)

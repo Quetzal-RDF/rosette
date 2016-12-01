@@ -131,7 +131,8 @@
 (define-ops
   str.to.re str.in.re re.range
   re.++ re.* re.+ re.opt re.loop
-  re.union re.inter)
+  re.union re.inter seq.to.re
+  seq.unit)
 
 ; Quantifiers
 (define (quantified quantifier vars body)

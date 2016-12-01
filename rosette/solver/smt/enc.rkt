@@ -80,7 +80,7 @@
      ($str.prefixof (enc pre env) (enc s env))]
     [(expression (== @string-suffix?) s suf)
      ($str.suffixof (enc suf env) (enc s env))]
-    [(expression (== @regexp-match-exact?) r s) ; TODO handle string r
+    [(expression (== @regexp-match-exact?) r s)
      ($str.in.re (enc s env) (enc r env))]
     [(expression (and (or (== @forall) (== @exists)) op) vars body)
      ((if (equal? op @forall) $forall $exists)
@@ -95,8 +95,6 @@
     [(expression (app rosette->smt (? procedure? $op)) es ...) 
      (apply $op (for/list ([e es]) (enc e env quantified)))]
     [_ (error 'enc "cannot encode ~a to SMT" v)]))
-
-; TODO @regexp-concat to re.++: Squish to 3 args
 
 (define (enc-const v env quantified) (ref! env v))
 

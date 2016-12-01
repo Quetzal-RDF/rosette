@@ -51,6 +51,7 @@
    (any-char (token-LIT lexeme))
    ((eof) (token-EOF))))
 
+; Not all regexp literals are supported right now
 (define (unsupported-regexp-error [token-lit #f])
   (if token-lit
       (assert #f (thunk (error 'parse-re "provided regexp literal syntax ~a not yet supported" token-lit)))
@@ -85,11 +86,11 @@
      ((^) (unsupported-regexp-error "^")) ; TODO start
      (($) (unsupported-regexp-error "$")) ; TODO finish
      ((lit) ($str.to.re (string->$str $1)))
-     ((LMODE mode : re RP) (unsupported-regexp-error "(?<mode>:<re>)")) ; TODO Match ‹regexp› using ‹mode›
+     ((LMODE mode : re RP) (unsupported-regexp-error "(?<mode>:<re>)"))
      ((FIRST re RP) $2) ; TODO since we don't support match, we don't care if it's first, but may eventually
-     ((look) $1) ; TODO supposed to be empty if look matches, this is wrong
-     ((LMODE tst pces UNION pces RP) (unsupported-regexp-error "(?<test><pces>|<pces>)")) ; TODO match 1st ‹pces› if ‹tst›, else 2nd ‹pces›
-     ((LMODE tst pces RP) (unsupported-regexp-error "(?<test><pces>)"))) ; TODO match ‹pces› if ‹tst›, empty if not ‹tst›
+     ((look) $1)
+     ((LMODE tst pces UNION pces RP) (unsupported-regexp-error "(?<test><pces>|<pces>)"))
+     ((LMODE tst pces RP) (unsupported-regexp-error "(?<test><pces>)")))
     (rng
      ((RB) ($str.to.re (escape-string "]")))
      ((-) ($str.to.re (escape-string "-")))
@@ -109,12 +110,12 @@
      ((^ lrng) ($re.union ($str.to.re (escape-string "^")) $2))
      ((lirng) $1))
     (look
-     ((LOOKE re RP) $2)
-     ((LOOKN re RP) (unsupported-regexp-error "(?!<re>)")) ; TODO negation not yet supported in Z3, may need to bump up and handle earlier in enc
-     ((LOOKP re RP) (unsupported-regexp-error "(?<=<re>)")) ; TODO Match if ‹regexp› matches preceding (what does this mean?)
-     ((LOOKNP re RP) (unsupported-regexp-error "(?<!<re>)"))) ; TODO negation not yet supported in Z3, may need to bump up and handle earlier in enc
+     ((LOOKE re RP) (unsupported-regexp-error "(?=<re>)"))
+     ((LOOKN re RP) (unsupported-regexp-error "(?!<re>)")) 
+     ((LOOKP re RP) (unsupported-regexp-error "(?<=<re>)")) 
+     ((LOOKNP re RP) (unsupported-regexp-error "(?<!<re>)")))
     (tst
-     ((LP LIT RP) (unsupported-regexp-error)) ; TODO true if Nth ( has a match
+     ((LP LIT RP) (unsupported-regexp-error))
      ((look) $1))
     (mode
      (() (unsupported-regexp-error "(?<mode>:<re>)"))
