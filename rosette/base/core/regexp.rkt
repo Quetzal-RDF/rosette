@@ -29,9 +29,16 @@
        [_ (assert #f (thunk (raise-argument-error caller "expected a regexp?" v)))])) 
    (define (type-compress self force? ps) regexp/compress)])     
 
-; TODO not sure what I need here, for now just using generic
 (define (regexp/compress force? ps)
-  (generic-merge* ps))
+  (match ps
+    [(list _) ps]
+    [(list (cons g a) (cons (expression (== !) g) b)) (list (cons #t (ite g a b)))]
+    [(list (cons (expression (== !) g) b) (cons g a)) (list (cons #t (ite g a b)))]
+    [(list (cons g a) ...)
+     (list
+      (cons
+       (apply || g)
+       (foldl @regexp-union @regexp-none (for/list ([guard g][re a]) (ite guard re @regexp-none)))))]))
 
 ;; ----------------- Lifting utilities ----------------- ;;
 
