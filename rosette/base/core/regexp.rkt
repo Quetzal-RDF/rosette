@@ -1,5 +1,9 @@
 #lang racket
 
+; Limited support for lifted Racket regexps.
+; This currently supports a subset of regexp literals
+; and exact regexp matching.
+
 (require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "safe.rkt"
          "string.rkt" "real.rkt")
 
@@ -71,23 +75,10 @@
 
 ;; ----------------- Regexp Operators ----------------- ;;
 
-; Current comments are temporary, for development purposes
-; Will remove and replace with more informative ones later (TODO)
-
-; Things people may want that we don't need directly for Z3:
-; regexp-match
-; regexp-match*
-; regexp-try-match
-; regexp-match?
-; regexp-split
-; regexp-replace
-; regexp-replace*
-; regexp-replaces
-; regexp-replace-quote
-
 (define @regexp-all #rx".*")
 (define @regexp-none #rx"$.^")
 
+; regexp
 (define ($regexp str)
   (if (string? str)
       (regexp str)
@@ -144,13 +135,14 @@
         ($regexp-match-exact?
          (type-cast @regexp? pattern caller)
          (type-cast @string? input caller)))))
-    
+
+; regexp-range
 (define (assert-string-char ch)
   (cond
     [(and (string? ch) (not (= (string-length ch) 1)))
-     (assert #f (thunk (raise-argument-error 'regexp-range
-                                              "expected string? of length 1"
-                                              ch)))]))
+     (assert #f
+       (thunk
+         (raise-argument-error 'regexp-range "expected string? of length 1" ch)))]))
     
 (define ($regexp-range ch1 ch2)
   (if (and (string? ch1) (string? ch2))
@@ -179,6 +171,7 @@
      (list* (regexp (apply string-append (map object-name r))) ($regexp-concat-simplify rest))]
     [(list r rest ...) (list* r ($regexp-concat-simplify rest))]))
 
+; regexp-concat
 (define ($regexp-concat . rs)
   (match rs
     [`() @regexp-none]
@@ -199,6 +192,7 @@
   #:unsafe $regexp-concat
   #:safe (lift-op $regexp-concat))
 
+; regexp-star 
 (define ($regexp-star r)
   (if (regexp? r)
       (regexp (@string-append "(" (object-name r) ")*"))
@@ -210,6 +204,7 @@
   #:unsafe $regexp-star
   #:safe (lift-op $regexp-star))
 
+; regexp-plus
 (define ($regexp-plus r)
   (if (regexp? r)
       (regexp (@string-append "(" (object-name r) ")+"))
@@ -221,6 +216,7 @@
   #:unsafe $regexp-plus
   #:safe (lift-op $regexp-plus))
 
+; regexp-opt
 (define ($regexp-opt r) 
   (if (regexp? r)
       (regexp (@string-append "(" (object-name r) ")?"))
@@ -232,6 +228,7 @@
   #:unsafe $regexp-opt
   #:safe (lift-op $regexp-opt))
 
+; regexp-union
 (define ($regexp-union r1 r2) 
   (if (and (regexp? r1) (regexp? r2))
       (regexp (@string-append (object-name r1) "|" (object-name r2)))

@@ -16,7 +16,21 @@
                [(or (and (>= b #x10) (< b 32)) (= b 127))
                 (string->bytes/utf-8 (format "\\x~x" b))]))))))
 
-; TODO still a problem with extended ASCII (>= 128) which is not being read in correctly
-
 (define (escape-string s)
   (string-append "\"" s "\""))
+
+; TODO
+; There is still a problem with the replacement character �
+; An example Z3 query that causes this:
+
+;(declare-fun c0 () String)
+;(define-fun e1 () Bool (str.contains "€" c0))
+;(assert e1)
+;(check-sat)
+;(get-model)
+
+; �
+
+; This appears to be system-sensitive and may be related to system encodings.
+; It happens before the string ever reaches this point.
+; Maybe "€" (along with some other ASCII 128+ characters) needs a different encoding.

@@ -1,5 +1,10 @@
 #lang racket
 
+; Some of the preliminary work on strings is taken from this pull request:
+; https://github.com/emina/rosette/pull/7
+;
+; It has been adapted for Rosette 2.0 and extended with support for new operations. 
+
 (require racket/splicing
          "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "real.rkt"
          "safe.rkt" "../adt/seq.rkt")
