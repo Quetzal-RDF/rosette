@@ -389,13 +389,15 @@
   (check-pred unsat? (solve (! (@equal? (@string-index-of x x) 0))))
   (clear-asserts!))
 
-(define (check-string-index-of-not-contains)
-  (define i (@string-index-of x y xi))
-  (check-pred unsat? (solve (@>= i 0) (! (@string-contains? x y)) (first (asserts))))
-  (clear-asserts!))
+; Blocked by https://github.com/Z3Prover/z3/issues/875
+;(define (check-string-index-of-not-contains)
+  ;(define i (@string-index-of x y xi))
+  ;(check-pred unsat? (apply solve (&& (@>= i 0) (! (@string-contains? x y))) (asserts)))
+  ;(clear-asserts!))
 
 (define (check-string-index-of-negative-offset)
-  (check-pred unsat? (solve (@>= (@string-index-of x y xi) 0) (@<= xi -1)))
+  (define i (@string-index-of x y xi))
+  (check-pred unsat? (apply solve (@>= (@string-index-of x y xi) 0) (@<= xi -1) (asserts)))
   (clear-asserts!))
 
 (define (check-string-index-of-out-of-bounds)
@@ -549,7 +551,7 @@
   (test-suite+
    "Tests for string-index-of in rosette/base/string.rkt"
    (check-string-index-of-simplifications)
-   (check-string-index-of-not-contains)
+   ;(check-string-index-of-not-contains) Blocked by https://github.com/Z3Prover/z3/issues/875
    (check-string-index-of-negative-offset)
    (check-string-index-of-out-of-bounds)
    (check-string-index-of-types)
