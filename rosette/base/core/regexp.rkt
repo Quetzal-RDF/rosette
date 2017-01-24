@@ -46,30 +46,8 @@
 
 ;; ----------------- Lifting utilities ----------------- ;;
 
-; TODO duplicate logic in string.rkt, consolidate at some point
-
-(define (safe-apply-n op xs @ts?)
-  (define caller (object-name op)) 
-  (cond
-    [(empty? @ts?) (apply op (for/list ([x xs]) (type-cast @regexp? x caller)))]
-    [else (apply op (for/list ([x xs] [@t? @ts?]) (type-cast @t? x caller)))]))
-
-(define (safe-apply-1 op x @ts?)
-  (safe-apply-n op (list x) @ts?))
-
-(define (safe-apply-2 op x y @ts?)
-  (safe-apply-n op (list x y) @ts?))
-
-(define (lift-op op . ts)
-  (case (procedure-arity op)
-    [(1)  (lambda (x) (safe-apply-1 op x ts))]
-    [(2)  (lambda (x y) (safe-apply-2 op x y ts))]
-    [else
-     (case-lambda
-       [() (op)]
-       [(x) (safe-apply-1 op x ts)]
-       [(x y) (safe-apply-2 op x y ts)]
-       [xs (safe-apply-n op xs ts)])]))
+(define (lift-op op . @ts?)
+  (lift-op-generic op @ts? @regexp?))
 
 (define T*->regexp? (const @regexp?))
 

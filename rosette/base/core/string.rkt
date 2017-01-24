@@ -15,7 +15,8 @@
          @string->integer @integer->string
          @string-at @string-index-of @index-of
          @string-set! @string-fill!
-         @string-copy! T*->string?)
+         @string-copy! T*->string?
+         lift-op-generic)
 
 (define-lifted-type @string?
   #:base string?
@@ -48,28 +49,31 @@
 
 ;; ----------------- Lifting utilities ----------------- ;;
 
-(define (safe-apply-n op xs @ts?)
+(define (safe-apply-n op xs @ts? @default?)
   (define caller (object-name op)) 
   (cond
-    [(empty? @ts?) (apply op (for/list ([x xs]) (type-cast @string? x caller)))]
+    [(empty? @ts?) (apply op (for/list ([x xs]) (type-cast @default? x caller)))]
     [else (apply op (for/list ([x xs] [@t? @ts?]) (type-cast @t? x caller)))]))
 
-(define (safe-apply-1 op x @ts?)
-  (safe-apply-n op (list x) @ts?))
+(define (safe-apply-1 op x @ts? @default?)
+  (safe-apply-n op (list x) @ts? @default?))
 
-(define (safe-apply-2 op x y @ts?)
-  (safe-apply-n op (list x y) @ts?))
+(define (safe-apply-2 op x y @ts? @default?)
+  (safe-apply-n op (list x y) @ts? @default?))
 
-(define (lift-op op . ts)
+(define (lift-op-generic op @ts? @default?)
   (case (procedure-arity op)
-    [(1)  (lambda (x) (safe-apply-1 op x ts))]
-    [(2)  (lambda (x y) (safe-apply-2 op x y ts))]
+    [(1)  (lambda (x) (safe-apply-1 op x @ts? @default?))]
+    [(2)  (lambda (x y) (safe-apply-2 op x y @ts? @default?))]
     [else
      (case-lambda
        [() (op)]
-       [(x) (safe-apply-1 op x ts)]
-       [(x y) (safe-apply-2 op x y ts)]
-       [xs (safe-apply-n op xs ts)])]))
+       [(x) (safe-apply-1 op x @ts? @default?)]
+       [(x y) (safe-apply-2 op x y @ts? @default?)]
+       [xs (safe-apply-n op xs @ts? @default?)])]))
+
+(define (lift-op op . @ts?)
+  (lift-op-generic op @ts? @string?))
 
 (define T*->string? (const @string?))
 
