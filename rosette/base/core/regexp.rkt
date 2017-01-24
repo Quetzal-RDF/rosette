@@ -138,9 +138,9 @@
   #:unsafe $regexp-range
   #:safe (lift-op $guarded-regexp-range @string? @string?))
 
-;(re.++ r1 r2 r3) Concatenation of regular expressions.
-; Not sure why string-append was so complex to begin with, but using what's already done anyways
-; TODO revisit to simplify later
+; (re.++ r1 r2 r3) Concatenation of regular expressions.
+; This is based off of string-append since it is similar in functionality,
+; but it does not yet have many simplications
 (define ($regexp-concat-simplify rs)
   (match rs
     [(list) rs]
