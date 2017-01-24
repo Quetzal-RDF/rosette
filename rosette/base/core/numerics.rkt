@@ -83,8 +83,6 @@
     [(_ _) (expt z w)]))
 
 ; string->number and number->string only support integers and radix 10 for now
-; (TODO see if possible to support reals, other radixes)
-; TODO simplifications
 (define ($string->number s [radix 10])
   (match s
     [(? string?) (string->number s)]
