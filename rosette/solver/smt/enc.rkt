@@ -25,7 +25,7 @@
                   @string->integer @integer->string
                   @string-at @index-of @string-replace-internal)
          (only-in "../../base/core/regexp.rkt"
-                  @regexp @regexp-quote @regexp-match-exact? @string->regexp
+                  @regexp/equal? @regexp @regexp-quote @regexp-match-exact? @string->regexp
                   @regexp-all @regexp-none @regexp-concat @regexp-range
                   @regexp-star @regexp-plus @regexp-opt @regexp-union))
 
@@ -145,7 +145,7 @@
   [@string->integer $str.to.int] [@integer->string $int.to.str]
   [@index-of $str.indexof]
   ; regex
-  [@string->regexp $str.to.re] [@regexp-range $re.range]
+  [@regexp/equal? $=] [@string->regexp $str.to.re] [@regexp-range $re.range]
   [@regexp-star $re.*] [@regexp-plus $re.+] [@regexp-opt $re.opt]
   [@regexp-union $re.union])
 

@@ -5,24 +5,19 @@
 ; and exact regexp matching.
 
 (require "term.rkt" "union.rkt" "bool.rkt" "polymorphic.rkt" "safe.rkt"
-         "string.rkt" "real.rkt")
+         "string.rkt")
 
 (provide @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
          @regexp-all @regexp-none @regexp-concat @regexp-range
-         @regexp-star @regexp-plus @regexp-opt @regexp-union)
-
-(define (regexp/equal? x y)
-  (match* (x y)
-    [((? regexp?) (? regexp?)) (equal? x y)]
-    [(_ _) (=? x y)]))
+         @regexp-star @regexp-plus @regexp-opt @regexp-union @regexp/equal?)
 
 (define-lifted-type @regexp?
   #:base regexp?
   #:is-a? (instance-of? regexp? @regexp?)
   #:methods
   [(define (solvable-default self) #rx"$.^")
-   (define (type-eq? self u v) (regexp/equal? u v)) 
-   (define (type-equal? self u v) (regexp/equal? u v))
+   (define (type-eq? self u v) (@regexp/equal? u v)) 
+   (define (type-equal? self u v) (@regexp/equal? u v))
    (define (type-cast self v [caller 'type-cast])
      (match v
        [(? regexp?) v]
@@ -55,6 +50,31 @@
 
 (define @regexp-all #rx".*")
 (define @regexp-none #rx"$.^")
+
+; Equality
+(define ($= x y)
+  (match* (x y)
+    [((? regexp?) (? regexp?)) (equal? x y)]
+    [(_ (== x)) #t]
+    [((expression (== ite) a (? regexp? b) (? regexp? c)) (? regexp? d))
+     (|| (&& a (equal? b d)) (&& (! a) (equal? c d)))]
+    [((? regexp? d) (expression (== ite) a (? regexp? b) (? regexp? c)))
+     (|| (&& a (equal? b d)) (&& (! a) (equal? c d)))]
+    [((expression (== ite) a (? regexp? b) (? regexp? c)) 
+      (expression (== ite) d (? regexp? e) (? regexp? f)))
+     (let ([b~e (equal? b e)] 
+           [b~f (equal? b f)] 
+           [c~e (equal? c e)] 
+           [c~f (equal? c f)])
+       (or (and b~e b~f c~e c~f)
+           (|| (&& a d b~e) (&& a (! d) b~f) (&& (! a) d c~e) (&& (! a) (! d) c~f))))]
+    [(_ _) (sort/expression @regexp/equal? x y)]))
+
+(define-operator @regexp/equal?
+  #:identifier '=
+  #:range T*->boolean?
+  #:unsafe $=
+  #:safe (lift-op $=))
 
 ; regexp
 (define ($regexp str)
