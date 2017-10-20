@@ -114,7 +114,7 @@
     [_ (error 'enc "expected a boolean?, integer?, real?, bitvector?, string?, or regexp? given ~a" v)]))
 
 (define-syntax-rule (enc-real v)
-  (if (exact? v) ($/ (numerator v) (denominator v)) (string->symbol (~r v))))
+  (if (exact? v) ($/ (numerator v) (denominator v)) (string->symbol (~r (if (rational? v) v 0)))))
 
 (define-syntax define-encoder
   (syntax-rules ()

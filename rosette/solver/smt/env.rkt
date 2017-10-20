@@ -85,7 +85,7 @@
                 (cond [(null? quantified)
                        (dict-set! defs k id)
                        (define-const id (smt-type (type-of v)) e)
-                       id]
+		       id]
                       [else 
                        (define-fun id (for/list ([q quantified]) (list (dict-ref defs q) (smt-type (type-of q))))
                          (smt-type (type-of v))

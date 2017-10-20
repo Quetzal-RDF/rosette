@@ -31,6 +31,7 @@
   "solver/solver.rkt"
   "solver/solution.rkt" 
   "base/base.rkt"
-  "query/query.rkt") 
+  "query/query.rkt"
+  "solver/smt/z3.rkt") 
  (for-syntax (all-from-out racket))
  rosette clear-state!)

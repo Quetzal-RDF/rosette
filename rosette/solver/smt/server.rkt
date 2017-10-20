@@ -3,7 +3,7 @@
 (require racket/runtime-path)
 
 (provide server server-start server-running? server-shutdown 
-         server-write server-read server-error)
+         server-write server-read server-error server-process)
 
 ; A server manages the creation, use, and shutdown of external processes.  
 ; The path field specifies the absolute path to the program to be called 

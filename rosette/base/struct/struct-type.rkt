@@ -55,7 +55,7 @@
       [_ #f]))
 
   (define super        (and super-type (typed? super-type) (get-type super-type)))
-  (define field-count  (- init-field-cnt auto-field-cnt))
+  (define field-count  (+ init-field-cnt auto-field-cnt))
   (define immutable?   (and (= init-field-cnt (length immutables)) (zero? auto-field-cnt)))  
   (define transparent? (not inspector))
   (define equal+hash   (let ([e+h (assoc (generic-property gen:equal+hash) props)])
@@ -67,7 +67,7 @@
 ;  (printf " immutable?: ~a\n" immutable?)
 ;  (printf " transparent?: ~a\n" transparent?)
 ;  (printf " procedure?: ~a\n" procedure?)
-;  (printf " equal+hash?: ~a\n" equal+hash?)
+;  (printf " equal+hash: ~a\n" equal+hash)
   
   (define @struct:t
     (struct-type 
@@ -86,11 +86,11 @@
          [setter (make-struct-field-mutator (struct-type-set! @struct:t) i field-id)]
          [getter (make-struct-field-accessor (struct-type-ref @struct:t) i field-id)])
     (procedure-rename 
-     (lambda (receiver value) 
+     (lambda (receiver value)  
        (if (native? receiver)
            (apply! setter getter receiver value) 
            (match (type-cast @struct:t receiver (object-name setter))
-             [(? native? r) (apply! setter getter receiver value)]
+             [(? native? r) (apply! setter getter r value)]
              [(union rs) (for ([r rs]) 
                            (apply! setter getter (cdr r) (merge (car r) value (getter (cdr r)))))])))
      (object-name setter))))

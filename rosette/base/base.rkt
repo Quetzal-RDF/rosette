@@ -52,7 +52,7 @@
      @string? @string-append @string-length @substring
      @string-contains? @string-prefix? @string-suffix?
      @string-replace @string-at @string-index-of
-     @string-set! @string-fill! @string-copy!
+     @string-set! @string-fill! @string-copy! integer->string string->integer
      ; core/regexp.rkt
      @regexp? @regexp @regexp-quote @regexp-match-exact? @string->regexp
      @regexp-all @regexp-none @regexp-concat @regexp-range

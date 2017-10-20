@@ -10,7 +10,7 @@
          (only-in "../../base/core/bitvector.rkt" bitvector? bv?)
          (only-in "../../base/core/real.rkt" @integer? @real?))
 
-(provide (rename-out [make-z3 z3]) z3?)
+(provide (rename-out [make-z3 z3]) z3? z3-server)
 
 (define-runtime-path z3-path (build-path ".." ".." ".." "bin" "z3"))
 (define z3-opts '("-smt2" "-in"))
@@ -103,6 +103,7 @@
 
 (define (reset-default-options)
   (reset)
+  (set-option ':timeout 60000)
   (set-option ':produce-unsat-cores 'false)
   (set-option ':auto-config 'true)
   (set-option ':smt.relevancy 2)

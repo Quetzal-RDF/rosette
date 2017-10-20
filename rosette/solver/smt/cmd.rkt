@@ -3,7 +3,7 @@
 (require (only-in "smtlib2.rkt" assert minimize maximize
                   check-sat get-model get-unsat-core
                   read-solution true false)
-         "env.rkt" "enc.rkt"
+         "env.rkt" "enc.rkt" "dec.rkt"
          (only-in "../../base/core/term.rkt" constant? term-type solvable-default)
          (only-in "../../base/core/function.rkt" fv function? function-domain function-range)
          (only-in "../../base/core/bool.rkt" @boolean?)
@@ -62,13 +62,7 @@
 (define (decode env)
   (match (read-solution)
     [(? hash? sol) 
-     (sat (for/hash ([(decl id) (in-dict env)]
-                     #:when (and (constant? decl) (hash-has-key? sol id)))
-            (let ([t (term-type decl)])
-              (values decl
-                      (if (function? t)
-                          (decode-function t (hash-ref sol id))
-                          (decode-value t (hash-ref sol id)))))))]
+     (sat (decode-model env sol))]
     [(? list? names)
      (unsat (let ([core (apply set (map name->id names))])
               (for/list ([(bool id) (in-dict env)] #:when (set-member? core id)) 
@@ -91,6 +85,8 @@
     [(== @real?) 
      (match val 
        [(? real?) val]
+       [(list 'root-obj (list '+ (list '^ 'x a) (list '- b)) 1) (expt b (/ 1 a))]
+       [(list 'root-obj (list '+ (list '^ 'x a) b) 1) (expt (- b) (/ 1 a))]
        [(list '- (list '/ a b)) (- (/ (to-exact-int a) (to-exact-int b)))]
        [(list '- v) (- v)]
        [(list '/ a b) (/ (to-exact-int a) (to-exact-int b))]
@@ -131,9 +127,4 @@
        [(list (== '=) x y)
         (or (and (equal? p x) y)
             (and (equal? p y) x))]))))
-  
-
-
-  
-
 
