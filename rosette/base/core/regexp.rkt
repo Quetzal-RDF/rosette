@@ -26,7 +26,9 @@
         (assert g (thunk (raise-argument-error caller "expected a regexp?" v)))
         u] 
        [_ (assert #f (thunk (raise-argument-error caller "expected a regexp?" v)))])) 
-   (define (type-compress self force? ps) regexp/compress)])     
+   (define (type-compress self force? ps) (generic-merge* ps))])
+
+;   (define (type-compress self force? ps) regexp/compress)])     
 
 (define (regexp/compress force? ps)
   (match ps
