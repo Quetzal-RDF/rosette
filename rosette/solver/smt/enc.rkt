@@ -50,8 +50,10 @@
   (match v
     [(and (expression (== ite*) gvs ...) (app get-type t))
      (let-values ([($0 $op) (if (bitvector? t) 
-                                (values ($bv 0 (bitvector-size t)) $bvor) 
-                                (values 0 $+))])
+                                (values ($bv 0 (bitvector-size t)) $bvor)
+				(if (equal? "string?" (~v t))
+				    (values "\"\"" $str.++)
+				    (values 0 $+)))])
        (apply $op (for/list ([gv gvs]) 
                     ($ite (enc (guarded-test gv) env quantified) 
                           (enc (guarded-value gv) env quantified) 
