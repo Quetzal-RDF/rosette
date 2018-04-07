@@ -116,8 +116,6 @@
 (define forall (quantifier @forall))
 (define-quantifier @exists exists)
 (define-quantifier @forall forall)
-
-
        
 ;; ----------------- Additional operators ----------------- ;; 
 (define-syntax and-&&
