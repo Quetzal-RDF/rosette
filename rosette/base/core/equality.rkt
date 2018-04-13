@@ -63,6 +63,15 @@
                                 )
                               )
                             ]
+                            [((expression v1 p1) (expression v2 p2))
+                              (let* ([vs1 (format "~v" v1)] [vs2 (format "~v" v2)])
+                                (cond
+                                  [(and (equal? vs1 "integer->string") (equal? vs2 "integer->string"))
+                                    (@=? p1 p2)]
+                                  [#t (type=? (type-of x y) x y)]
+                                )
+                              )
+                            ]
                             [(_ _) (type=? (type-of x y) x y)]
                           )
                          ]
